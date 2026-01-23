@@ -1,0 +1,44 @@
+[build-system]
+requires = [
+"setuptools>=61.0", 
+"wheel",
+"pytest",
+"pytest-asyncio"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xls_management"
+version = "1.0.0"
+authors = [
+  { name="José Ayude", email="jose.ayude@alten.es" },
+]
+description = "xls_management aims to implement several scripts over xlsx workbooks"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = { file = "LICENSE"}
+dependencies = [
+    "pandas",
+    "xlsxwriter",
+    "openpyxl",
+    "olefile",
+    "msoffcrypto-tool",
+    "textual"
+]
+[project.scripts]
+projects = "xls_management.tui.main:projects"
+project = "xls_management.ate.project:project_combo_box"
+ate_shell = "xls_management.shell.ate:launch_shell"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+xls_management = ["test/data/*"]
