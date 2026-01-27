@@ -1,7 +1,15 @@
-#class FRUTiming
+class FRUTiming:
 #Option Explicit
 #
-#Public Feature As String
-#Public Reifegrad As String
-#Public Umsetzer As String
-#Public IStufe As String
+
+    def __init(
+        self,
+        feature:str,   #Public Feature As String
+        reifegrad:str, #Public Reifegrad As String
+        umsetzer:str,  #Public Umsetzer As String
+        i_stufe:str,   #Public IStufe As String
+    ):
+        self.feature = feature
+        self.reifegrad = reifegrad
+        self.umsetzer = umsetzer
+        self.i_stufe = i_stufe
