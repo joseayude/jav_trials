@@ -26,7 +26,6 @@ class ATEStatus():
         ):
         self.predecessorIdUsed = predecessorIdUsed
         self.project = project
-        self.info_AVW = info_AVW
 #   Private Function ATE_Status_Initializer(ByRef wbAVW As Workbook, ByRef wbAVWMaster As Workbook, ByRef wbTDVK As Workbook, ByRef wbTDAA As Workbook, ByRef wbTF As Workbook, ByRef wbFRUTiming As Workbook, _
 #           ByRef wksAVW As Worksheet, ByRef wksAVWMaster As Worksheet, ByRef wksTDVK As Worksheet, ByRef wksTDAA As Worksheet, ByRef wksTF As Worksheet, ByRef wksFRUTiming As Worksheet, _
 #           ByRef strAVWAttribute() As String, ByRef strAVWMasterAttribute() As String, ByRef strTDVKAttribute() As String, ByRef strTDAAAttribute() As String, ByRef strTFAttribute() As String, ByRef strFRUTimingAttribute() As String, _
@@ -89,9 +88,9 @@ class ATEStatus():
 #           strAVWAttribute(23) = "Abgezweigt aus"  'strAVWAttribute(22) = "Abgezweigt aus"
 #       End If
         if self.predecessorIdUsed:
-            self.info_AVW.attributes = AVW_ATTRIBUTE_DE
+            self.info_AVW = DBInfo(attributes=AVW_ATTRIBUTE_DE)
         else:
-            self.info_AVW.attributes = AVW_ATTRIBUTE_DE[:-1]
+            self.info_AVW = DBInfo(attributes=AVW_ATTRIBUTE_DE[:-1])
 #
 #       'Dateiauswahl und Zuordnung
 #       'Projektspezifisch (MEB21 oder MQB48W) oder allgemein
@@ -114,7 +113,7 @@ class ATEStatus():
 #                   End If
 #               Next
             if not self.import_attribute[0]:
-                strAttributeAVW = self.info_AVW.str_attributes()
+                #strAttributeAVW = self.info_AVW.str_attributes()
 #               'Sammlung aller gesuchten projektspezifischen Attribute erzeugen
 #               For i = LBound(strAVWAttributeMEB21, 1) To UBound(strAVWAttributeMEB21, 1)
 #                   If strAttributeAVW = "" Then
@@ -123,7 +122,7 @@ class ATEStatus():
 #                       strAttributeAVW = strAttributeAVW & ", " & strAVWAttributeMEB21(i)
 #                   End If
 #               Next i
-                strAttributeAVN += f", {self.str_AVW_attributeBEB21}" 
+                #strAttributeAVN += f", {self.str_AVW_attributeBEB21}" 
 #               'Zusammenführung der gesuchten Attribute
 #               If strFehlerGesamt = "" Then
 #                   strFehlerGesamt = "Anforderungen können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strProjekt & " - " & strAttributeAVW & ")"
@@ -131,7 +130,10 @@ class ATEStatus():
 #                   strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Anforderungen können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strProjekt & " - " & strAttributeAVW & ")"
 #               End If
 #               blnImportAttribute(1) = False
-                self.collect_errors("Anforderungen können nicht eingelesen werden!")
+                self.collect_errors(
+                    "Anforderungen können nicht eingelesen werden!", 
+                    f"{self.info_AVW.str_attributes()}, {self.str_AVW_attributeBEB21}"
+                )
 #           End If
 #       ElseIf EinlesenDatei("Anforderungen Projektbereich", strAVWAttribute, rngAVWAttribute, wbAVW, wksAVW, strFehlerAVW, strDateinamen(1)) Then
 #           ImportAttribute(1) = True
@@ -166,9 +168,20 @@ class ATEStatus():
 #           strTDVKAttribute(3) = "Status"
 #           strTDVKAttribute(4) = "Temp1_Text"
 #           strTDVKAttribute(5) = "Aktion"
+        if self.import_attribute[0]:
+            self.info_TDVK = DBInfo(
+                attributes = (
+                    "ID",
+                    "Basierend auf der Anforderung",
+                    "Status",
+                    "Temp1_Text",
+                    "Aktion",
+                )
+            )
 #           'Dateiauswahl und Zuordnung
 #           If EinlesenDatei("Verifikationskriterien", strTDVKAttribute, rngTDVKAttribute, wbTDVK, wksTDVK, strFehlerTDVK, strDateinamen(2)) Then
 #               blnImportAttribute(2) = True
+            self.import_attribute[1] = self.info_TDVK.einlesen_datei()
 #           Else
 #               'Sammlung aller gesuchten Attribute erzeugen
 #               strAttributeTDVK = ""
@@ -179,11 +192,14 @@ class ATEStatus():
 #                       strAttributeTDVK = strAttributeTDVK & ", " & strTDVKAttribute(i)
 #                   End If
 #               Next i
+            if not self.import_attribute[1]:
+                # str_attribute_TDVK = self.info_TDVK.str_attributes()
 #               If strFehlerGesamt = "" Then
 #                   strFehlerGesamt = "Verifikationskriterien können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeTDVK & ")"
 #               Else
 #                   strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Verifikationskriterien können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeTDVK & ")"
 #               End If
+                self.collect_errors("Verifikationskriterien können nicht eingelesen werden!", self.info_TDVK.str_attributes())
 #               blnImportAttribute(2) = False
 #           End If
 #       End If
@@ -193,14 +209,25 @@ class ATEStatus():
 #           'TDAAs: #1: ID, #2: Enthalten in, #3: Status, #4: Testinstanz, #5: Testumgebungstyp
 #           ReDim strTDAAAttribute(1 To 5)
 #           ReDim rngTDAAAttribute(LBound(strTDAAAttribute, 1) To UBound(strTDAAAttribute, 1))
+        if self.import_attribute[1]:
 #           strTDAAAttribute(1) = "ID"
 #           strTDAAAttribute(2) = "Enthalten in"
 #           strTDAAAttribute(3) = "Status"
 #           strTDAAAttribute(4) = "Testinstanz"
 #           strTDAAAttribute(5) = "Testumgebungstyp"
+            self.info_TDAA = DBInfo(
+                attributes = (
+                    "ID",
+                    "Enthalten in",
+                    "Status",
+                    "Testinstanz",
+                    "Testumgebungstyp" ,
+                )
+            )
 #           'Dateiauswahl und Zuordnung
 #           If EinlesenDatei("Absicherungsaufträge", strTDAAAttribute, rngTDAAAttribute, wbTDAA, wksTDAA, strFehlerTDAA, strDateinamen(3)) Then
 #               blnImportAttribute(3) = True
+            self.import_attribute[3] = self.info_TDAA.einlessen_datei()
 #           Else
 #               'Sammlung aller gesuchten Attribute erzeugen
 #               strAttributeTDAA = ""
@@ -211,11 +238,14 @@ class ATEStatus():
 #                       strAttributeTDAA = strAttributeTDAA & ", " & strTDAAAttribute(i)
 #                   End If
 #               Next i
+            if not self.import_attribute[2]:
+                #str_attribute_TDAA = self.info_TDAA.str_attributes()
 #               If strFehlerGesamt = "" Then
 #                   strFehlerGesamt = "Absicherungsaufträge können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeTDAA & ")"
 #               Else
 #                   strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Absicherungsaufträge können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeTDAA & ")"
 #               End If
+                self.collect_errors("Absicherungsaufträge können nicht eingelesen werden!", self.info_TDAA.str_attributes())
 #               blnImportAttribute(3) = False
 #           End If
 #       End If
@@ -232,10 +262,24 @@ class ATEStatus():
 #           strTFAttribute(5) = "Basierend auf Testdesign"
 #           strTFAttribute(6) = "verifiziert"
 #           strTFAttribute(7) = "Testinstanz"
+        if self.import_attribute[2]:
+            self.info_TF = DBInfo(
+                attributes = (
+                    "ID",
+                    "Status",
+                    "Testfallname",
+                    "Sonstige-Varianten",
+                    "Basierend auf Testdesign",
+                    "verifiziert",
+                    "Testinstanz",
+                )
+            )
 #           'Dateiauswahl und Zuordnung
 #           If EinlesenDatei("Testfälle", strTFAttribute, rngTFAttribute, wbTF, wksTF, strFehlerTF, strDateinamen(4)) Then
 #               blnImportAttribute(4) = True
+            self.import_attribute[3] = self.info_TF.einlessen_datei()
 #           Else
+            if not self.import_attribute[3]:
 #               'Sammlung aller gesuchten Attribute erzeugen
 #               strAttributeTF = ""
 #               For i = LBound(strTFAttribute, 1) To UBound(strTFAttribute, 1)
@@ -245,16 +289,19 @@ class ATEStatus():
 #                       strAttributeTF = strAttributeTF & ", " & strTFAttribute(i)
 #                   End If
 #               Next i
+                #str_attribute_TF = self.info_TF.str_attributes()
 #               If strFehlerGesamt = "" Then
 #                   strFehlerGesamt = "Testfälle können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeTF & ")"
 #               Else
 #                   strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Testfälle können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeTF & ")"
 #               End If
+                self.collect_errors("Testfälle können nicht eingelesen werden!", self.info_TF.str_attributes())
 #               blnImportAttribute(4) = False
 #           End If
 #       End If
 #                   
 #       If blnImportAttribute(4) Then
+        if self.import_attribute[3]:
 #           'Arbeitsblatt FRU-Timing
 #           'FRUTiming: #1: FeatureName, #2: RG, #3: Umsetzer, #4: Zuordnung zu I-Stufe
 #           ReDim strFRUTimingAttribute(1 To 4)
@@ -263,10 +310,20 @@ class ATEStatus():
 #           strFRUTimingAttribute(2) = "Reifegrad"  'vorher "RG"
 #           strFRUTimingAttribute(3) = "Umsetzer"
 #           strFRUTimingAttribute(4) = "FE_Meilenstein" 'vorher "Zuordnung zu I-Stufe"
+            self.info_fru_timming = DBInfo(
+                attributes = (
+                    "FeatureName",
+                    "Reifegrad",  #vorher "RG"
+                    "Umsetzer",
+                    "FE_Meilenstein", #vorher "Zuordnung zu I-Stufe",
+                )
+            )
 #           'Dateiauswahl und Zuordnung
 #           If EinlesenDatei("FRU-Timing", strFRUTimingAttribute, rngFRUTimingAttribute, wbFRUTiming, wksFRUTiming, strFehlerFRUTiming, strDateinamen(5)) Then
 #               blnImportAttribute(5) = True
+            self.import_attribute[4] = self.info_fru_timming.einlessen_datei()
 #           Else
+            if not self.import_attribute[4]:
 #               'Sammlung aller gesuchten Attribute erzeugen
 #               strAttributeFRUTiming = ""
 #               For i = LBound(strFRUTimingAttribute, 1) To UBound(strFRUTimingAttribute, 1)
@@ -276,17 +333,21 @@ class ATEStatus():
 #                       strAttributeFRUTiming = strAttributeFRUTiming & ", " & strFRUTimingAttribute(i)
 #                   End If
 #               Next i
+                #str_attribute_fru_timming = self.info_FRUTimming.str_attributes()
 #               If strFehlerGesamt = "" Then
 #                   strFehlerGesamt = "FRU-Timing kann nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeFRUTiming & ")"
 #               Else
 #                   strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "FRU-Timing kann nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeFRUTiming & ")"
 #               End If
+                self.collect_errors("FRU-Timing kann nicht eingelesen werden!", self.info_AVW.str_attributes())
 #               blnImportAttribute(5) = False
 #           End If
 #       End If
 #       
 #       If blnAVWVorgaengerIDsVerwenden = True Then
+        if self.predecessorIdUsed:
 #           If blnImportAttribute(5) = True Then
+            if self.import_attribute[4]:
 #               'Arbeitsblatt AVWMaster_Rohdaten
 #               'AVW: #1: ID, #2: temp1_Text, #3: Kommentar Redaktionskreis
 #               'Weiche für Erfassung der Nachfolger-IDs
@@ -295,10 +356,19 @@ class ATEStatus():
 #               strAVWMasterAttribute(1) = "ID"
 #               strAVWMasterAttribute(2) = "temp1_Text"
 #               strAVWMasterAttribute(3) = "Kommentar Redaktionskreis"
+                self.info_AVW_master = DBInfo(
+                    attributes = (
+                        "ID",
+                        "temp1_Text",
+                        "Kommentar Redaktionskreis",
+                    )
+                )
 #               'Dateiauswahl und Zuordnung
 #               If EinlesenDatei("Anforderungen Masterbereich", strAVWMasterAttribute, rngAVWMasterAttribute, wbAVWMaster, wksAVWMaster, strFehlerAVWMaster, strDateinamen(6)) Then
 #                   blnImportAttribute(6) = True
+                self.import_attribute[5] = self.info_AVW_master.einlessen_datei()
 #               Else
+                if not self.import_attribute[5]:
 #                   'Sammlung aller gesuchten Attribute erzeugen
 #                   strAttributeAVWMaster = ""
 #                   For i = LBound(strAVWMasterAttribute, 1) To UBound(strAVWMasterAttribute, 1)
@@ -308,11 +378,16 @@ class ATEStatus():
 #                           strAttributeAVWMaster = strAttributeAVWMaster & ", " & strAVWMasterAttribute(i)
 #                       End If
 #                   Next i
+                    # strAttributeAVWMaster = self.info_AVW_master.str_attributes()
 #                   If strFehlerGesamt = "" Then
 #                       strFehlerGesamt = "Anforderungen aus dem Masterbereich können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeAVWMaster & ")"
 #                   Else
 #                       strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Anforderungen aus dem Masterbereich können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeAVWMaster & ")"
 #                   End If
+                    self.collect_errors(
+                        "Anforderungen aus dem Masterbereich können nicht eingelesen werden!",
+                        self.info_AVW_master.str_attributes(),
+                    )
 #                   blnImportAttribute(6) = False
 #               End If
 #           End If
@@ -332,14 +407,16 @@ class ATEStatus():
 #               ATE_Status_Initializer = False
 #           End If
 #       End If
+        
+        self.ATE_STATus_Initializer = all(self.import_attribute)
 #   End Function
 
     def _status_initializer(self) -> bool:
         return True
     
-    def collect_errors(self, error: str, info:DBInfo):
+    def collect_errors(self, error: str, attributes:str):
         if self.errors == "":
-            self.errors = f"{error}\n(Benötigt: {self.project} - {info.str_attributes()})"
+            self.errors = f"{error}\n(Benötigt: {self.project} - {attributes})"
         else:        
-            self.errors += f"\n\n{error}\n(Benötigt: {self.project} - {info.str_attributes()})"
+            self.errors += f"\n\n{error}\n(Benötigt: {self.project} - {attributes})"
     

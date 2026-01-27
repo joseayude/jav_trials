@@ -68,7 +68,7 @@ def status():
     #Set wbBsM = ThisWorkbook
     #TODO
     
-    str_project = project_combo_box()
+    str_project, evalue_master_id = project_combo_box()
     #
     #If boolAuswahlGetroffen Then
     #    'Eingabe Projekt
