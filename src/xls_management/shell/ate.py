@@ -19,9 +19,14 @@ class MyShell(cmd.Cmd):
     def do_choose(self, arg):
         """choose a project from a list using a combobox"""
         str_project = arg
+        evalue_master_id: bool
         if not str_project:
-            str_project = project_combo_box()
-        print(f"project {ansi_color(str_project, Color.GREEN.value)} was chosen")
+            str_project, evalue_master_id = project_combo_box()
+        print(f"project {ansi_color(str_project, Color.GREEN)} was chosen")
+        msg = f"{ansi_color("evalue",Color.GREEN)} master id"
+        if not evalue_master_id:
+            msg = f"{ansi_color("do not evalue",Color.RED)} master id"
+        print(msg)
 
     # Tab completion for 'project'
     def complete_project(self, text, line, begidx, endidx):

@@ -12,4 +12,4 @@ class Color(str,Enum):
 RESET = "\033[0m"  # Reset to default color
 
 def ansi_color(text:str, color:Color) -> str:
-    return f"{color}{text}{RESET}"
+    return f"{color.value}{text}{RESET}"
