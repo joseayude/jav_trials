@@ -27,7 +27,8 @@ dependencies = [
     "openpyxl",
     "olefile",
     "msoffcrypto-tool",
-    "textual"
+    "textual",
+    "textual_fspicker"
 ]
 [project.scripts]
 projects = "xls_management.tui.main:projects"

@@ -1,6 +1,8 @@
 import cmd
+from pathlib import Path
 from xls_management.ate import PROJECTS
 from xls_management.ate.project import project_combo_box
+from xls_management.tui.file_picker import path_from_file_picker
 from xls_management.utils.color import Color, ansi_color
 
 class MyShell(cmd.Cmd):
@@ -27,6 +29,11 @@ class MyShell(cmd.Cmd):
         if not evalue_master_id:
             msg = f"{ansi_color("do not evalue",Color.RED)} master id"
         print(msg)
+    
+    def do_file(self, location:str="."):
+        """uses a file picker to choose a file"""
+        file_path = path_from_file_picker(location=location, title="Choose ATE input file")
+        print(f"file {ansi_color(str(file_path),Color.GREEN)} was chosen")
 
     # Tab completion for 'project'
     def complete_project(self, text, line, begidx, endidx):
