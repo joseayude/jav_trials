@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from pathlib import Path
-from openpyxl import load_workbook
+from typing import Generator
 
 class Workbook:
     def __init__(self, file_path:Path|str):
@@ -38,18 +38,30 @@ class Workbook:
             print(f"Unexpected error: {e}")
 
         return None
-    
-    def xlsm_sheet_names(self):
+
+    def sheets(self, index:int|str) -> pd.DataFrame:
         try:
             # Load the workbook (read-only mode for efficiency)
-            workbook = load_workbook(filename=self.file_path, read_only=True, keep_vba=True)
-
-            # Get all sheet names
-            sheet_names = workbook.sheetnames
-
-            return sheet_names
+            names = self.sheet_names()
+            df:pd.DataFrame|None = None
+            name:str = ""
+            if isinstance(index,str):
+                name = index
+            elif index < len(names):
+                name = names[index]
+            if name in names:
+                df = pd.read_excel(self.file_path, sheet_name=names[index])
+            else:
+                raise IndexError(f"{index} is wrong value for {', '.join(names)}")
         except FileNotFoundError:
             print(f"Error: File '{self.file_path}' not found.")
         except Exception as e:
             print(f"Error reading file: {e}")
-
+        return df
+    
+    def all_sheets(self) -> Generator[tuple[str,pd.DataFrame],None,None]:
+        """iterator """
+        for name in self.sheet_names():
+            df:pd.DataFrame = pd.read_excel(self.file_path, sheet_name=name)
+            yield name, df
+    

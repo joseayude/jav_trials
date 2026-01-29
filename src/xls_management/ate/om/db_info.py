@@ -1,73 +1,49 @@
+from pathlib import Path
+from xls_management.tui.file_picker import path_from_file_picker
+from xls_management.workbook import Workbook
+import pandas as pd
+
+
 class DBInfo:
     def __init__(
-            self,
-            workbook:str,
-            worksheet:str,
-            attributes: tuple[str]= (),
-            ranges:tuple[str]=(),
-        ):
-        self.workbook = workbook
-        self.worksheet = worksheet
+        self,                        #
+        #workbook:Workbook,           # ByRef wbImport As Workbook
+        #sheet_name:str,              # ByRef wksImport As Worksheet
+           # sheet_name and workbook is enougth to be able to load the data
+        #columns:pd.DataFrame,        # ByRef rngAttribute() As Range
+        attributes: tuple[str]= (),  # ByRef strAttribute() As String
+    ):
+        self.workbook:Workbook|None = None
+        self.sheet_name:str = ""
         self.attributes = attributes
-        self.ranges = ranges
+        self.columns:pd.DataFrame|None = None
 
     def str_attributes(self, separator:str=", "):
         return separator.join(self.attributes)
 
 #   Public Function EinlesenDatei(ByVal strTitel As String, ByRef strAttribute() As String, ByRef rngAttribute() As Range, ByRef wbImport As Workbook, ByRef wksImport As Worksheet, ByRef strFehler As String, ByRef strDateinamen As String) As Boolean
-    def einlesen_datei(self, titel:str, dateinamen:str) -> bool:
-#       Dim blnAttributeImport As Boolean   'Flag für Attribute
-#       Dim intWksImport As Integer         'Zähler für Worksheets
-#       Dim strImportPfad As String         'String für Dateipfad
-#       Dim strImportDatei As String        'String für Dateinamen
-#       Dim strFehlerGesamt As String       'Sting für Gesamtfehler
-#       Dim intAttributeZaehler As Integer  'Zähler für Attribute
-#       Dim strFehlerAttribute As String    'String für fehlende Attribute
-#       
-#       On Error Resume Next
-#       
-#       blnAttributeImport = False
-#       strFehlerGesamt = ""
-#       strDateinamen = ""
-#       
-#       strImportPfad = Application.GetOpenFilename(FileFilter:="Excel-Dateien (*.xls; *.xlsx; *.xlm; *.xlsm), *.xls; *.xlsx; *.xlm; *.xlsm", FilterIndex:=1, Title:=strTitel & " auswählen")
-#       If Trim(strImportPfad) <> "Falsch" Then
-#           'Datei öffnen
-#           Workbooks.Open strImportPfad
-#           'Dateinamen extrahieren
-#           strImportDatei = Right(strImportPfad, Len(strImportPfad) - InStrRev(strImportPfad, "\"))
-#           strDateinamen = strImportDatei
-#           'Workbook zuweisen
-#           Set wbImport = Workbooks(strImportDatei)
-#           'Worksheets nach Attributen durchsuchen
-#           intWksImport = 0
-#           Do
-#               'Rangeobjekte zurücksetzen
-#               ReDim rngAttribute(LBound(strAttribute, 1) To UBound(strAttribute, 1))
-#               'Zähler für Arbeitsblatt erhöhen
-#               intWksImport = intWksImport + 1
-#               'Worksheet zuweisen
-#               Set wksImport = wbImport.Sheets(intWksImport)
-#               'Attribute suchen
-#               For intAttributeZaehler = LBound(strAttribute, 1) To UBound(strAttribute, 1)
-#                   Set rngAttribute(intAttributeZaehler) = wksImport.Cells.Find(strAttribute(intAttributeZaehler), lookat:=xlWhole)
-#               Next intAttributeZaehler
-#               'Suche auswerten
-#               strFehlerAttribute = ""
-#               If RangeObjekteVorhandenFehlerausgabe(rngAttribute, strAttribute, strFehlerAttribute) Then
-#                   blnAttributeImport = True
-#               Else
-#                   If strFehlerGesamt = "" Then
-#                       strFehlerGesamt = wksImport.Name & ": " & strFehlerAttribute
-#                   Else
-#                       strFehlerGesamt = strFehlerGesamt & "; " & wksImport.Name & ": " & strFehlerAttribute
-#                   End If
-#               End If
-#           Loop While intWksImport < wbImport.Worksheets.Count And blnAttributeImport = False
-#       End If
-#       
-#       'Rückgabewert übernehmen
-#       EinlesenDatei = blnAttributeImport
-#       'Fehlerwert übernehmen
-#       strFehler = strFehlerGesamt
-#   End Function
+    def einlesen_datei(self, titel:str) -> tuple[bool,str]:
+        """
+        user chooses a workbook using a file picker widget
+        True,"" is returned if each expected attribute is in one of the workbook sheets;
+                self.sheet_name is set with the name of the sheet containg those attributes
+        False, error_trace is returned elsewhere; 
+                being error trace a trace of missing attributes
+           
+        """ 
+        error_trace = ""
+        import_file_path = path_from_file_picker(location=".", title= f"{titel} auswählen")
+        if import_file_path is not None:
+            workbook: Workbook = Workbook(import_file_path)
+            import_file_name = Path(workbook.file_path).name
+            for self.sheet_name, self.columns in workbook.all_sheets():
+                missing_attributes = [attribute for attribute in self.attributes if attribute not in self.columns]
+                if len(missing_attributes) == 0:
+                    # all expected attributes have been found; self.sheet_name and self.columns are set
+                    return True, ""
+                else:
+                    error_trace += (
+                        f"The following attributes are missing from {self.sheet_name} in {import_file_name}: "
+                        f"{', '.join(missing_attributes)}\n"
+                    )
+        return False, error_trace

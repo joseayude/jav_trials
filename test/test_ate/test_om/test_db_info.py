@@ -1,0 +1,54 @@
+from pathlib import Path
+from unittest.mock import patch
+from xls_management.ate.om.db_info import DBInfo
+from xls_management.utils.aux import all_in_sequence
+from test import working_path
+
+def test_db_info_init():
+    data:DBInfo = DBInfo(attributes=('License plate', 'Brand', 'Modell'))
+    assert all_in_sequence(('License plate', 'Brand', 'Modell'),data.attributes)
+    assert len(data.attributes) == 3
+
+def test_db_info_einlesen_datei():
+    import sys
+    to_remove = [name for name in sys.modules if name.startswith("xls_management")]
+    for name in to_remove:
+        del sys.modules[name]
+    file_path: Path = working_path / f"test/data/example01.xlsx"
+    with patch('xls_management.tui.file_picker.path_from_file_picker', return_value=file_path):
+        from xls_management.ate.om.db_info import DBInfo
+        from xls_management.utils.aux import all_in_sequence
+        data = DBInfo(attributes=('License plate', 'Brand', 'Modell'))
+        success, error_string = data.einlesen_datei("Test")
+        assert success is True
+        assert error_string == ""
+        assert all_in_sequence(data.attributes, data.columns.keys())
+        assert data.sheet_name == "Cars"
+        assert len(data.columns["License plate"]) == 3
+        assert data.columns['License plate'][0] == 'DE2456HBZ'
+        assert data.columns['Brand'][2] == 'Audi'
+        assert data.columns['Modell'][1] == 'Polo'
+
+def test_db_info_einlesen_datei_error():
+    import sys
+    to_remove = [name for name in sys.modules if name.startswith("xls_management")]
+    for name in to_remove:
+        del sys.modules[name]
+    file_path: Path = working_path / f"test/data/example01.xlsx"
+    with patch('xls_management.tui.file_picker.path_from_file_picker', return_value=file_path):
+        from xls_management.ate.om.db_info import DBInfo
+        from xls_management.utils.aux import all_in_sequence
+        data = DBInfo(attributes=('Name', 'License plate', 'Brand', 'Modell'))
+        success, error_string = data.einlesen_datei("Test")
+        assert success is False
+        assert error_string != ""
+        lines = error_string.splitlines()
+        assert "People" in lines[0]
+        assert "Name" in lines[1]
+        for attribute in data.attributes[1:]:
+            assert attribute in lines[0]
+            assert attribute not in lines[1]
+        assert "Cars" in lines[1]
+        assert "Name" in lines[1]
+
+            

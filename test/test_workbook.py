@@ -18,7 +18,7 @@ def test_workbook_sheet():
 def test_protected_workbook_sheets():
     file_path: Path = working_path / "test/data/example02.xlsx"
     w: Workbook = Workbook(file_path)
-    result = w.xlsm_sheet_names()
+    result = w.sheet_names()
     assert result is None
 
 def test_all_sheets():
