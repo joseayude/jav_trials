@@ -1,4 +1,5 @@
 from pathlib import Path
+import pandas as pd
 import pytest
 from test import working_path
 from xls_management.is_ole import is_ole
@@ -25,7 +26,7 @@ def test_pandas_xlsxwriter():
     
     df2 = pd.DataFrame({
         "License plate": ["DE2456HBZ", "DE4562IBZ", "DE5246ZHB"],
-        "Marke": ["Volkswagen", "Volkswagen", "Audi"],
+        "Brand": ["Volkswagen", "Volkswagen", "Audi"],
         "Modell": ["Passat", "Polo", "A4"]
     })
 
