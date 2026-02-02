@@ -28,7 +28,8 @@ dependencies = [
     "olefile",
     "msoffcrypto-tool",
     "textual",
-    "textual_fspicker"
+    "textual_fspicker",
+    "pyyaml"
 ]
 [project.scripts]
 projects = "xls_management.tui.main:projects"
