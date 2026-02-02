@@ -3,6 +3,7 @@ from pathlib import Path
 from xls_management.ate import PROJECTS
 from xls_management.ate.project import project_combo_box
 from xls_management.tui.file_picker import path_from_file_picker
+from xls_management.tui.yes_no_form import yes_no_msgbox
 from xls_management.utils.color import Color, ansi_color
 
 class MyShell(cmd.Cmd):
@@ -29,6 +30,14 @@ class MyShell(cmd.Cmd):
         if not evalue_master_id:
             msg = f"{ansi_color("do not evalue",Color.RED)} master id"
         print(msg)
+
+    def do_ask(self, arg):
+        """choose a project from a list using a combobox"""
+        yes_answer = yes_no_msgbox("Trial msgbox\nAre you ready to answer?")
+        if yes_answer:
+            print(f'User answer is {ansi_color("YES", Color.GREEN)}')
+        else:
+            print(f'User answer is {ansi_color("NO",Color.RED)}')
     
     def do_file(self, location:str="."):
         """uses a file picker to choose a file"""
