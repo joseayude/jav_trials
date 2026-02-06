@@ -52,3 +52,8 @@ class DBInfo:
                         f"The following attributes are missing from {self.sheet_name} in {import_file_name}: "
                         f"{', '.join(missing_attributes)}\n"
                     )
+    
+    def get_errors(self, msg:str) -> str:
+        errors = f"{msg}\n{self.error_msg}\n"
+        self.error_msg =""
+        return errors

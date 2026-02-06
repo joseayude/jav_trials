@@ -2,6 +2,12 @@ from xls_management.ate.om.db_info import DBInfo
 from xls_management.ate.om.project_db_info import ProjectDBInfo
 from xls_management.ate.om.verificationskriterium  import Verificationskriterium
 from xls_management.ate.om.avw_vorganenger import AVWVorgaenger
+from xls_management.ate.data import AVW_ATTRIBUTE_DE
+from xls_management.ate.project import project_combo_box
+from xls_management.tui.msgbox import msgbox
+from xls_management.config import ATEConfig
+
+from importlib.metadata import version
 
 #Option Explicit
 #
@@ -10,7 +16,7 @@ from xls_management.ate.om.avw_vorganenger import AVWVorgaenger
 class ATEStatus:
 #
 #       Public Sub ATE_Status()
-    def on_status_click(self):
+    def perform_status(self):
 #       'Allgemein
 #       Dim strFehlerGesamt As String               'String für Gesamtfehlerausgabe
 #       Dim strWeitereTUsAusgabe As String          'String für Ausgabe weiterer Testumgebungstypen
@@ -29,8 +35,7 @@ class ATEStatus:
 #       
 #       'BsM-Status wird separat im Workbook des Makros erzeugt
 #       Set wbBsM = ThisWorkbook
-
-#       
+#       self.info_BsM = DBInfo()
 #       'Befüllung der Projektliste
 #       strProjekte(0) = "leer"
 #       strProjekte(1) = "MQB48W"
@@ -44,6 +49,7 @@ class ATEStatus:
 #       'Abfrage Projekt und Nutzung Master-Bereich
 #       BoxAuswahlProjekt.Caption = "ATE-Status " & strVersionMakro
 #       BoxAuswahlProjekt.Show
+        self.project, self.use_predecesor_ids = project_combo_box()
 #       
 #       If boolAuswahlGetroffen Then
 #           'Eingabe Projekt
@@ -62,36 +68,55 @@ class ATEStatus:
 #                                     rngAVWAttribute, rngAVWMasterAttribute, rngTDVKAttribute, rngTDAAAttribute, rngTFAttribute, rngFRUTimingAttribute, _
 #                                     strFehlerGesamt, strDateinamen, blnAVWVorgaengerIDsVerwenden, _
 #                                     strProjekt, strAVWAttributeMEB21, rngAVWAttributeMEB21) Then
+        if self.initialized():
 #               'LAH-Blacklist einlesen
 #               Call EinlesenLAHBlacklist(wbBsM, strLAHBlacklist)
+            self.read_black_list()
 #               'Testdesigns - Verifikationskriterien einlesen
 #               Call EinlesenTDVKs(wksTDVK, strTDVKAttribute, rngTDVKAttribute)
+            self.read_TDVKs()
 #               'Testdesigns - Absicherungsaufträge einlesen
 #               Call EinlesenTDAAs(wksTDAA, strTDAAAttribute, rngTDAAAttribute)
+            self.read_TDAAs()
 #               'Testfälle
 #               Call EinlesenTFs(wksTF, strTFAttribute, rngTFAttribute)
+            self.read_TFs()
 #               'FRU-Timing
 #               Call EinlesenFRUTiming(wksFRUTiming, strFRUTimingAttribute, rngFRUTimingAttribute)
+            self.read_FRU_timing()
 #               'Anforderungen
+                #coded in else side
 #               If blnAVWVorgaengerIDsVerwenden = False Then
 #                   'Anforderungsstatistik Projekt
 #                   Call EinlesenAVWRohdaten(wksAVW, strAVWAttribute, rngAVWAttribute, strLAHBlacklist, strProjekt, strAVWAttributeMEB21, rngAVWAttributeMEB21)
 #               Else
+            if self.use_predecesor_ids:
 #                   'Anforderungsstatistik Masterbereich
 #                   Call EinlesenAVWVorgaengerRohdaten(wksAVWMaster, strAVWMasterAttribute, rngAVWMasterAttribute)
+                self.read_predecesor_raw_data_AVW()
 #                   'Anforderungsstatistik Projekt
 #                   Call EinlesenAVWNachfolgerRohdaten(wksAVW, strAVWAttribute, rngAVWAttribute, strLAHBlacklist, strProjekt, strAVWAttributeMEB21, rngAVWAttributeMEB21)
+                self.read_successor_raw_data_AVW()
 #               End If
+            else:
+                self.read_raw_data_AVW()
 #               'Ausgabe ATE-Status
 #               Call AusgabeATEStatus(wbBsM, wksBsM, strBsMAttribute, rngBsMAttribute, strWeitereTUsAusgabe, strDateinamen, strProjekt)
+            self.output_status()
 #               'Ausgabe TD-Status
 #               Call AusgabeTDStatus(wbBsM, wksTD, strTDAttribute, rngTDAttribute, strDateinamen, strProjekt)
+            self.output_status_TD()
 #               'Geöffnete Dateien schliessen
 #               Call SchliessenWb(wbBsM, wbAVW, wbAVWMaster, wbTDVK, wbTDAA, wbTF, wbFRUTiming)
+            self.close_workbooks()
 #               
 #               'Verläufe ATE_Status_Verlauf und TD_Status_Verlauf befüllen und Rückgabewerte zusammenführen
 #               Call AusgabeVerlauf(wksBsM, strFehlerATEVerlauf, 1)
 #               Call AusgabeVerlauf(wksTD, strFehlerTDVerlauf, 2)
+            self.ausgabe_verlauf()
+            #TODO: errors seems to be join together at next, so taking them together in a self.errors instance
+            #     at ATEStatus object seems to be the right thing
+            #
 #               If strFehlerATEVerlauf <> "" And strFehlerTDVerlauf <> "" Then
 #                   strFehlerVerlauf = strFehlerATEVerlauf & vbCrLf & strFehlerTDVerlauf
 #               ElseIf strFehlerATEVerlauf <> "" Then
@@ -101,28 +126,65 @@ class ATEStatus:
 #               Else
 #                   strFehlerVerlauf = ""
 #               End If
+            ###################################
 #               
 #               'Abschlussmeldung
 #               If strWeitereTUsAusgabe = "" Then
+            if self.more_TU_issues == "":
 #                   If strFehlerVerlauf = "" Then
+                if self.more_TU_issues == "":
+                    msgbox(
+                        f"ATE-Status was created!\n\n"
+                        f"{version('xls_management')}\n"
+                    )
 #                       MsgBox "ATE-Status erstellt!" & vbCrLf & vbCrLf & "-----" & vbCrLf & strVersionMakro
 #                   Else
+                else:
+                    msgbox(
+                        f"ATE-Status was created!\n\n"
+                        f"{self.errors}\n\n"
+                        "-----\n"
+                        f"{version('xls_management')}\n"
+                    )
 #                       MsgBox "ATE-Status erstellt!" & vbCrLf & vbCrLf & strFehlerVerlauf & vbCrLf & vbCrLf & "-----" & vbCrLf & strVersionMakro
 #                   End If
 #               Else
 #                   If strFehlerVerlauf = "" Then
+            elif self.errors == "":
 #                       MsgBox "ATE-Status erstellt!" & vbCrLf & vbCrLf & "Folgende weitere Testumgebungstypen wurden erkannt, aber nicht für den Vergleich berücksichtigt:" & vbCrLf & vbCrLf & strWeitereTUsAusgabe & vbCrLf & vbCrLf & "-----" & vbCrLf & strVersionMakro
+                msgbox(
+                    f"ATE-Status was created!\n\n"
+                    "Folgende weitere Testumgebungstypen wurden erkannt, aber nicht für den Vergleich berücksichtigt:"
+                    f"{self.more_TU_issues}\n\n"
+                    "-----\n"
+                    f"{version('xls_management')}\n"
+                ) 
 #                   Else
+            else:
 #                       MsgBox "ATE-Status erstellt!" & vbCrLf & vbCrLf & "Folgende weitere Testumgebungstypen wurden erkannt, aber nicht für den Vergleich berücksichtigt:" & vbCrLf & vbCrLf & strWeitereTUsAusgabe & vbCrLf & vbCrLf & strFehlerVerlauf & vbCrLf & vbCrLf & "-----" & vbCrLf & strVersionMakro
+                msgbox(
+                    f"ATE-Status was created!\n\n"
+                    "Folgende weitere Testumgebungstypen wurden erkannt, aber nicht für den Vergleich berücksichtigt:"
+                    f"{self.more_TU_issues}\n\n"
+                    f"{self.errors}\n\n"
+                    "-----\n"
+                    f"{version('xls_management')}\n"
+                )
 #                   End If
 #               End If
 #               
 #           Else
+        else:
 #               MsgBox strFehlerGesamt, Buttons:=vbExclamation, Title:="Fehler beim Import für ATE-Tracking"
+            msgbox(
+                f"Errors trying to import for ATE-Tracking\n\n"
+                f"{self.errors}\n\n"
+            )
 #           End If
 #           
 #           'Worksheets und Klassenmodule zurücksetzen
 #           Call ATE_Status_Deinitializer(wksBsM, wksAVW, wksTDVK, wksTDAA, wksTF, wksFRUTiming)
+        self.status_deinitialize()
 #       End If
 #       
 #       Unload BoxAuswahlProjekt
@@ -130,26 +192,25 @@ class ATEStatus:
 #
     def __init__(
         self,
-        predecessorIdUsed:bool,
-        project:str,
     ) -> None:
-        self.predecessorIdUsed = predecessorIdUsed
-        self.project = project
+        self.config=ATEConfig()
+        self.predecessor_id_is_used = False
+        self.project = None
 #       'Klasse Verifikationskriterien mit Absicherungsaufträgen
 #       Public verifikationKritList As New Collection
-        self.verification_krit_list:dict = {}
+        self.verification_criterion_list:dict = {}
 #       'Klasse AVW-Rohdaten
 #       Public BsMDatenList As New Collection
-        self.daten_list_BsM:dict = {}
+        self.data_BsM:dict = {}
 #       'Klasse Testfälle
 #       Public testfallList As New Collection
-        self.test_fall_list:dict = {}
+        self.test_case_list:dict = {}
 #       'Klasse FRU_Timing
 #       Public FRUTimingList As New Collection
-        self.fru_timming_list:dict = {}
+        self.timming_FRU_list:dict = {}
 #       'Klasse AVWVorgaenger
 #       Public AVWVorgaengerList As New Collection
-        self.vorgaenger_AVW:dict = {}
+        self.predecessor_list_AVW:dict = {}
 #       'Flag für die Berücksichtigung von Vorgänger-IDs bei den AVW-Rohdaten
 #       Public blnAVWVorgaengerIDsVerwenden As Boolean
         self.vorgaenger_ids_verwenden_AVW:bool
@@ -158,11 +219,13 @@ class ATEStatus:
 #       Dim wksBsM As Worksheet                     'Worksheet für BsM_Status
 #       Dim strBsMAttribute() As String             'String-Array mit Attributen des Arbeitsblatts BsM_Status
 #       Dim rngBsMAttribute() As Range              'Range-Array mit Attributen des Arbeitsblatts BsM_Status
+        self.status_BsM:DBInfo
 #       'TD_Status
 #       Dim wbTD As Workbook                        'Workbook für TD_Status
 #       Dim wksTD As Worksheet                      'Worksheet für TD_Status
 #       Dim strTDAttribute() As String              'String-Array mit Attributen des Arbeitsblatts TD_Status
 #       Dim rngTDAttribute() As Range               'Range-Array mit Attributen des Arbeitsblatts TD_Status
+        self.status_TD:DBInfo
 #       'AVW_Rohdaten - Projekt
 #       Dim wbAVW As Workbook                       'Workbook für AVW_Rohdaten
 #       Dim wksAVW As Worksheet                     'Worksheet für AVW_Rohdaten
@@ -170,32 +233,41 @@ class ATEStatus:
 #       Dim rngAVWAttribute() As Range              'Range-Array mit Attributen des Arbeitsblatts AVW_Rohdaten
 #       Dim strAVWAttributeMEB21() As String        'String-Array mit Attributen des Arbeitsblatts AVW_Rohdaten für MEB21
 #       Dim rngAVWAttributeMEB21() As Range         'Range-Array mit Attributen des Arbeitsblatts AVW_Rohdaten für MEB21
+        self.row_data_AVW:DBInfo|ProjectDBInfo
 #       'AVW_Rohdaten - Master
 #       Dim wbAVWMaster As Workbook                 'Workbook für AVWMaster_Rohdaten
 #       Dim wksAVWMaster As Worksheet               'Worksheet für AVWMaster_Rohdaten
 #       Dim strAVWMasterAttribute() As String       'String-Array mit Attributen des Arbeitsblatts AVWMaster_Rohdaten
 #       Dim rngAVWMasterAttribute() As Range        'Range-Array mit Attributen des Arbeitsblatts AVWMaster_Rohdaten
+        self.master_row_data_AVW:DBInfo
 #       'TDVKs (Tesdesigns - Verifikationskriterium)
 #       Dim wbTDVK As Workbook                      'Workbook für TDs - Verifikationskriterien
 #       Dim wksTDVK As Worksheet                    'Worksheet für TDs - Verifikationskriterium
 #       Dim strTDVKAttribute() As String            'String-Array mit Attributen des Arbeitsblatts TDs - Verifikationskriterium
 #       Dim rngTDVKAttribute() As Range             'Range-Array mit Attributen des Arbeitsblatts TDs - Verifikationskriterium
+        self.test_design_verification_criterion:DBInfo
 #       'TDAAs (Tesdesigns - Absicherungsaufträge)
 #       Dim wbTDAA As Workbook                      'Workbook für TDs - Absicherungsaufträge
 #       Dim wksTDAA As Worksheet                    'Worksheet für TDs - Absicherungsaufträge
 #       Dim strTDAAAttribute() As String            'String-Array mit Attributen des Arbeitsblatts TDs - Absicherungsaufträge
 #       Dim rngTDAAAttribute() As Range             'Range-Array mit Attributen des Arbeitsblatts TDs - Absicherungsaufträge
+        self.test_design_assurance_contracts:DBInfo
 #       'TF (Testfälle)
 #       Dim wbTF As Workbook                        'Workbook für Testfälle
 #       Dim wksTF As Worksheet                      'Worksheet für Testfälle
 #       Dim strTFAttribute() As String              'String-Array mit Attributen des Arbeitsblatts Testfälle
 #       Dim rngTFAttribute() As Range               'Range-Array mit Attributen des Arbeitsblatts Testfälle
+        self.test_case:DBInfo
 #       'FRUTiming
 #       Dim wbFRUTiming As Workbook                 'Workbook für FRU-Timing
 #       Dim wksFRUTiming As Worksheet               'Worksheet für FRU-Timing
 #       Dim strFRUTimingAttribute() As String       'String-Array mit Attributen des Arbeitsblattes für FRU-Timing
 #       Dim rngFRUTimingAttribute() As Range        'Range-Array mit Attributen des Arbeitsblattes für FRU-Timing
+        self.timming_FRU:DBInfo
+        self.import_attribute = [False, False, False, False, False, False]
+        self.errors:str = ''
 
+    def initialized(self) -> bool:
 #   Private Function ATE_Status_Initializer(ByRef wbAVW As Workbook, ByRef wbAVWMaster As Workbook, ByRef wbTDVK As Workbook, ByRef wbTDAA As Workbook, ByRef wbTF As Workbook, ByRef wbFRUTiming As Workbook, _
 #           ByRef wksAVW As Worksheet, ByRef wksAVWMaster As Worksheet, ByRef wksTDVK As Worksheet, ByRef wksTDAA As Worksheet, ByRef wksTF As Worksheet, ByRef wksFRUTiming As Worksheet, _
 #           ByRef strAVWAttribute() As String, ByRef strAVWMasterAttribute() As String, ByRef strTDVKAttribute() As String, ByRef strTDAAAttribute() As String, ByRef strTFAttribute() As String, ByRef strFRUTimingAttribute() As String, _
@@ -233,32 +305,10 @@ class ATEStatus:
 #           ReDim strAVWAttribute(1 To 23)
 #       End If
 #       ReDim rngAVWAttribute(LBound(strAVWAttribute, 1) To UBound(strAVWAttribute, 1))
-#       strAVWAttribute(1) = "ID"
-#       strAVWAttribute(2) = "Dokument-ID"
-#       strAVWAttribute(3) = "Basis für Testdesign"
-#       strAVWAttribute(4) = "Typ"
-#       strAVWAttribute(5) = "Kategorie"
-#       strAVWAttribute(6) = "Status"
-#       strAVWAttribute(7) = "Feature"
-#       strAVWAttribute(8) = "Reifegrad"
-#       strAVWAttribute(9) = "Umsetzer"
-#       strAVWAttribute(10) = "ASIL"
-#       strAVWAttribute(11) = "BSM-SaFuSi Bewertung"
-#       strAVWAttribute(12) = "BSM-ZZ Bewertung"
-#       strAVWAttribute(13) = "BSM-ED Bewertung"
-#       strAVWAttribute(14) = "BSM-FFF Bewertung"
-#       strAVWAttribute(15) = "BSM-O Bewertung"
-#       strAVWAttribute(16) = "BSM-Se Bewertung"
-#       strAVWAttribute(17) = "MV"
-#       strAVWAttribute(18) = "Cluster Testing"
-#       strAVWAttribute(19) = "Dokument"
-#       strAVWAttribute(20) = "Kommentar Redaktionskreis"
-#       strAVWAttribute(21) = "temp1_Text"
-#       strAVWAttribute(22) = "Anforderungsverantwortliche"
 #       If blnAVWVorgaengerIDsVerwenden Then
 #           strAVWAttribute(23) = "Abgezweigt aus"  'strAVWAttribute(22) = "Abgezweigt aus"
 #       End If
-        if self.predecessorIdUsed:
+        if self.predecessor_id_is_used:
             self.info_AVW = DBInfo(attributes=AVW_ATTRIBUTE_DE)
         else:
             self.info_AVW = DBInfo(attributes=AVW_ATTRIBUTE_DE[:-1])
@@ -267,14 +317,19 @@ class ATEStatus:
 #       'Projektspezifisch (MEB21 oder MQB48W) oder allgemein
 #       If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
         if self.project in ("MEB21", "MQB48W"):
+            # Project specific importation
 #           ReDim strAVWAttributeMEB21(1 To 1)
 #           ReDim rngAVWAttributeMEB21(1 To 1)
 #           strAVWAttributeMEB21(1) = "Temp11_Auswahlfeld"
-            self.str_AVW_attributeBEB21 = "Temp11_Auswahlfeld"
-            self.info_AVW = ProjectDBInfo(self.info_AVW, self.project, ('Temp11_Auswahlfeld'))
+            attributes_MBE21_AVW:tuple[str] = ('Temp11_Auswahlfeld',)
+            self.info_AVW = ProjectDBInfo(
+                db_info=self.info_AVW,
+                project=self.project,
+                project_attributes=attributes_MBE21_AVW,
+            )
 #           If EinlesenDatei_Projektspezifisch("Anforderungen Projekt " & strProjekt, strAVWAttribute, rngAVWAttribute, wbAVW, wksAVW, strFehlerAVW, strDateinamen(1), strProjekt, strAVWAttributeMEB21, rngAVWAttributeMEB21) Then
 #               blnImportAttribute(1) = True
-            self.import_attribute[0] = self.AVW.EinlesenDatei_Projektspezifisch()
+            self.import_attribute[0] = self.info_AVW.einlesen_datei(f"Anforderungen Projekt {self.project}")
 #           Else
 #               'Sammlung aller gesuchten allgemeinen Attribute erzeugen
 #               For i = LBound(strAVWAttribute, 1) To UBound(strAVWAttribute, 1)
@@ -294,7 +349,6 @@ class ATEStatus:
 #                       strAttributeAVW = strAttributeAVW & ", " & strAVWAttributeMEB21(i)
 #                   End If
 #               Next i
-                #strAttributeAVN += f", {self.str_AVW_attributeBEB21}" 
 #               'Zusammenführung der gesuchten Attribute
 #               If strFehlerGesamt = "" Then
 #                   strFehlerGesamt = "Anforderungen können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strProjekt & " - " & strAttributeAVW & ")"
@@ -302,15 +356,13 @@ class ATEStatus:
 #                   strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Anforderungen können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strProjekt & " - " & strAttributeAVW & ")"
 #               End If
 #               blnImportAttribute(1) = False
-                self.collect_errors(
-                    "Anforderungen können nicht eingelesen werden!", 
-                    f"{self.info_AVW.str_attributes()}, {self.str_AVW_attributeBEB21}"
-                )
+                self.errors += self.info_AVW.get_errors('Anforderungen können nicht eingelesen werden!')
 #           End If
 #       ElseIf EinlesenDatei("Anforderungen Projektbereich", strAVWAttribute, rngAVWAttribute, wbAVW, wksAVW, strFehlerAVW, strDateinamen(1)) Then
 #           ImportAttribute(1) = True
         else:
-            self.import_attribute[0] = self.einlesen_datei("Anforderungen Projektbereich")
+            #No project specific importation
+            self.import_attribute[0] = self.info_AVW.einlesen_datei("Anforderungen Projektbereich")
         if not self.import_attribute[0]:
 #           'Sammlung aller gesuchten Attribute erzeugen
 #           strAttributeAVW = ""
@@ -327,7 +379,7 @@ class ATEStatus:
 #           Else
 #               strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Anforderungen können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeAVW & ")"
 #           End If
-            self.collecte_errors("Anforderungen können nicht eingelesen werden!", self.info_AVW)
+            self.errors += self.info_AVW.get_errors('Anforderungen können nicht eingelesen werden!')
 #       End If
 #       
 #       If blnImportAttribute(1) Then
@@ -371,7 +423,7 @@ class ATEStatus:
 #               Else
 #                   strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Verifikationskriterien können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeTDVK & ")"
 #               End If
-                self.collect_errors("Verifikationskriterien können nicht eingelesen werden!", self.info_TDVK.str_attributes())
+                self.errors += self.info_TDVK.get_errors('Verifikationskriterien können nicht eingelesen werden!')
 #               blnImportAttribute(2) = False
 #           End If
 #       End If
@@ -399,7 +451,7 @@ class ATEStatus:
 #           'Dateiauswahl und Zuordnung
 #           If EinlesenDatei("Absicherungsaufträge", strTDAAAttribute, rngTDAAAttribute, wbTDAA, wksTDAA, strFehlerTDAA, strDateinamen(3)) Then
 #               blnImportAttribute(3) = True
-            self.import_attribute[3] = self.info_TDAA.einlesen_datei("Absicherungsaufträge")
+            self.import_attribute[2] = self.info_TDAA.einlesen_datei("Absicherungsaufträge")
 #           Else
 #               'Sammlung aller gesuchten Attribute erzeugen
 #               strAttributeTDAA = ""
@@ -417,7 +469,7 @@ class ATEStatus:
 #               Else
 #                   strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Absicherungsaufträge können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeTDAA & ")"
 #               End If
-                self.collect_errors("Absicherungsaufträge können nicht eingelesen werden!", self.info_TDAA.str_attributes())
+                self.errors += self.info_TDAA.get_errors('Absicherungsaufträge können nicht eingelesen werden!')
 #               blnImportAttribute(3) = False
 #           End If
 #       End If
@@ -467,7 +519,7 @@ class ATEStatus:
 #               Else
 #                   strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Testfälle können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeTF & ")"
 #               End If
-                self.collect_errors("Testfälle können nicht eingelesen werden!", self.info_TF.str_attributes())
+                self.errors += self.info_TF.get_errors("Testfälle können nicht eingelesen werden!")
 #               blnImportAttribute(4) = False
 #           End If
 #       End If
@@ -511,13 +563,13 @@ class ATEStatus:
 #               Else
 #                   strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "FRU-Timing kann nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeFRUTiming & ")"
 #               End If
-                self.collect_errors("FRU-Timing kann nicht eingelesen werden!", self.info_AVW.str_attributes())
+                self.errors += self.info_AVW.get_errors('FRU-Timing kann nicht eingelesen werden!')
 #               blnImportAttribute(5) = False
 #           End If
 #       End If
 #       
 #       If blnAVWVorgaengerIDsVerwenden = True Then
-        if self.predecessorIdUsed:
+        if self.predecessor_id_is_used:
 #           If blnImportAttribute(5) = True Then
             if self.import_attribute[4]:
 #               'Arbeitsblatt AVWMaster_Rohdaten
@@ -556,10 +608,7 @@ class ATEStatus:
 #                   Else
 #                       strFehlerGesamt = strFehlerGesamt & vbCrLf & vbCrLf & "Anforderungen aus dem Masterbereich können nicht eingelesen werden!" & vbCrLf & "(Benötigt: " & strAttributeAVWMaster & ")"
 #                   End If
-                    self.collect_errors(
-                        "Anforderungen aus dem Masterbereich können nicht eingelesen werden!",
-                        self.info_AVW_master.str_attributes(),
-                    )
+                    self.errors += self.info_AVW_master.get_errors('Anforderungen aus dem Masterbereich können nicht eingelesen werden!')
 #                   blnImportAttribute(6) = False
 #               End If
 #           End If
@@ -580,18 +629,12 @@ class ATEStatus:
 #           End If
 #       End If
         
-        return all(self.import_attribute[:-1]) and (not self.predecessorIdUsed or self.import_attribute[5])
+        return all(self.import_attribute[:-1]) and (not self.predecessor_id_is_used or self.import_attribute[5])
 #   End Function
-    
-    def collect_errors(self, error: str, attributes:str):
-        if self.errors == "":
-            self.errors = f"{error}\n(Benötigt: {self.project} - {attributes})"
-        else:        
-            self.errors += f"\n\n{error}\n(Benötigt: {self.project} - {attributes})"
 
 #
 #   Private Sub ATE_Status_Deinitializer(ByRef wksBsM As Worksheet, ByRef wksAVW As Worksheet, ByRef wksTDVK As Worksheet, ByRef wksTDAA As Worksheet, ByRef wksTF As Worksheet, ByRef wksFRUTiming As Worksheet)
-    def ATE_Status_Deinitializer(self):
+    def status_deinitialize(self):
         pass #TODO
 #   'Worksheets identifizieren
 #   Set wksBsM = Nothing
@@ -612,7 +655,7 @@ class ATEStatus:
 #    Function EinlesenDatei_Projecktspezifish moved to om/db_info.py
 #   
 #   Private Sub SchliessenWb(ByVal wbBsM As Workbook, ByVal wbAVW As Workbook, ByVal wbAVWMaster As Workbook, ByVal wbTDVK As Workbook, ByVal wbTDAA As Workbook, ByVal wbTF As Workbook, ByRef wbFRUTiming As Workbook)
-    def SchliessenWb(self) -> None:
+    def close_workbooks(self) -> None:
         pass #TODO
 #   'wbBsM.Close SaveChanges:=False
 #   wbAVW.Close SaveChanges:=False
@@ -645,7 +688,7 @@ class ATEStatus:
 #   End Function
 #   
 #   Private Sub EinlesenLAHBlacklist(ByVal wbBsM As Workbook, ByRef strLAHBlacklist() As String)
-    def EinlesenLAHBlacklist(self):
+    def read_black_list(self):
         pass #TODO
 #       Dim strWKSBlacklist As String           'String für Namen des Blacklist-Worksheets
 #       Dim wksBlacklist As Worksheet           'Worksheet für Blacklist
@@ -698,7 +741,7 @@ class ATEStatus:
 #   End Sub
 #   
 #   Private Sub EinlesenTDVKs(ByVal wksTDVK As Worksheet, ByRef strTDVKAttribute() As String, ByRef rngTDVKAttribute() As Range)
-    def EinlesenTDVKs(self):
+    def read_TDVKs(self):
         pass #TODO
 #       Dim anfIDs As String                            'String für eingelesene Anforderungs-IDs
 #       Dim verifikationKrit As Verifikationskriterium  'Klasse Verifikationskriterium
@@ -768,7 +811,7 @@ class ATEStatus:
 #   End Sub
 #   
 #   Private Sub EinlesenTDAAs(ByVal wksTDAA As Worksheet, ByRef strTDAAAttribute() As String, ByRef rngTDAAAttribute() As Range)
-    def EinlesenTDAAs(self):
+    def read_TDAAs(self):
         pass #TODO
 #       Dim anfIDs As String                            'String für eingelesene Anforderungs-IDs
 #       Dim absicherungsAuftr As Absicherungsauftraege  'Klasse Absicherungsauftraege
@@ -807,7 +850,7 @@ class ATEStatus:
 #   End Sub
 #   
 #   Private Sub EinlesenTFs(ByVal wksTF As Worksheet, ByRef strTFAttribute() As String, ByRef rngTFAttribute() As Range)
-    def EinlesenTFs(self):
+    def read_TFs(self):
         pass #TODO
 #       Dim lngZeile As Long                            'Long-Zähler für aktuell einzulesende Zeile
 #       Dim testfall As Testfaelle                      'Klasse Testfaelle
@@ -871,7 +914,7 @@ class ATEStatus:
 #   End Sub
 #   
 #   Private Sub EinlesenFRUTiming(ByVal wksFRUTiming As Worksheet, ByRef strFRUTimingAttribute() As String, ByRef rngFRUTimingAttribute() As Range)
-    def EinlesenFRUTiming(self):
+    def read_FRU_timing(self):
         pass #TODO
 #       Dim lngZeile As Long                    'Long-Zähler für aktuell einzulesende Zeile
 #       Dim FRUTiming As FRUTiming              'Klasse FRUTiming
@@ -908,7 +951,7 @@ class ATEStatus:
 #   
 #   Private Sub EinlesenAVWRohdaten(ByVal wksAVW As Worksheet, ByRef strAVWAttribute() As String, ByRef rngAVWAttribute() As Range, ByRef strLAHBlacklist() As String, _
 #                                   ByVal strProjekt As String, ByRef strAVWAttributeMEB21() As String, ByRef rngAVWAttributeMEB21() As Range)
-    def EinlesenAVWRohdaten(self):
+    def read_raw_data_AVW(self):
         pass #TODO
 #       Dim lngZeile As Long                    'Long-Variable für aktuell einzulesende Zeile
 #       Dim BSMDatensatz As BSMDaten            'Klasse BSMDaten
@@ -1130,7 +1173,7 @@ class ATEStatus:
 #   
 #   Private Sub EinlesenAVWNachfolgerRohdaten(ByVal wksAVW As Worksheet, ByRef strAVWAttribute() As String, ByRef rngAVWAttribute() As Range, ByRef strLAHBlacklist() As String, _
 #                                             ByVal strProjekt As String, ByRef strAVWAttributMEB21() As String, ByRef rngAVWAttributMEB21() As Range)
-    def EinlesenAVWNachfolgerRohdaten(self):
+    def read_successor_raw_data_AVW(self):
         pass #TODO
 #       Dim lngZeile As Long                    'Long-Variable für aktuell einzulesende Zeile
 #       Dim BSMDatensatz As BSMDaten            'Klasse BSMDaten
@@ -1234,7 +1277,7 @@ class ATEStatus:
 #                           End If
 #                           'Kommentar Redaktionskreis und temp1_Text aus AVW-Vorgänger einlesen
 #                           Set AVWVorgaenger = New AVWVorgaenger
-#                           Set AVWVorgaenger = FindeAVWVorgaenger(AVWVorgaengerList, BSMDatensatz.AVWVorgaengerID)
+#                           Set AVWVorgaenger = find_predecessor_AVW(AVWVorgaengerList, BSMDatensatz.AVWVorgaengerID)
 #                           If Not AVWVorgaenger Is Nothing Then
 #                               If AVWVorgaenger.AbgelehntNichtTestbar = "x" Then
 #                                   If BSMDatensatz.AVWAbgelehntNichtTestbar = "" Then
@@ -1492,7 +1535,8 @@ class ATEStatus:
 #   End Function
 #   
 #   Private Function FindeVK(ByRef Liste As Collection, ByVal strKey As String) As Verifikationskriterium
-    def FindeVK(self, liste:dict[str,Verifikationskriterium], key:str) -> Verifikationskriterium:
+    def FindeVK(self, liste:dict[str,Verificationskriterium], key:str) -> Verificationskriterium:
+        return liste.get(key,None)
         #TOBEDEL Non required use get method instead.
 #       Dim ListenObjekt As Verifikationskriterium
 #           
@@ -1506,8 +1550,9 @@ class ATEStatus:
 #   End Function
 #   
 #   Private Function FindeAVWVorgaenger(ByRef Liste As Collection, ByVal strKey As String) As AVWVorgaenger
-    def FindeAVWVorgaenger(self, values:dict[str,AVWVorgaenger], key:str) -> AVWVorgaenger|None:
-        #TOBEDEL Non required use get method instead.
+    def find_predecessor_AVW(self, values:dict[str,AVWVorgaenger], key:str) -> AVWVorgaenger|None:
+        return values.get(key, None)
+        #TOBEDEL Unused. Non required use get method instead.
 #       Dim ListenObjekt As AVWVorgaenger
 #           
 #       On Error GoTo err
@@ -1520,7 +1565,7 @@ class ATEStatus:
 #   End Function
 #   
 #   Private Sub AusgabeATEStatus(ByVal wbBsM As Workbook, ByRef wksBsM As Worksheet, ByRef strBsMAttribute() As String, ByRef rngBsMAttribute() As Range, ByRef strWeitereTUsAusgabe As String, ByRef strDateinamen() As String, ByVal strProjekt As String)
-    def AusgabeATEStatus(self):
+    def output_status(self):
         pass    #TODO
 #       Dim lngDatensatz As Long                        'Long-Variable für aktuell zu schreibenden Datensatz
 #       Dim varErfassteBsMDatensatzItem As Variant      'Variant für Item im globalen BsM-Datensatz
@@ -1697,6 +1742,7 @@ class ATEStatus:
 #       'Zähler für weitere Testumgebungen
 #       intWeitereTUs = 0
 #       strWeitereTUsAusgabe = ""
+        self.more_TU_issues = ''
 #       
 #       'Tabelle füllen
 #       'Relevante Testumgebungen für Abgleich zwischen TDs und TFs
@@ -2071,7 +2117,7 @@ class ATEStatus:
 #   End Sub
 #   
 #   Private Sub AusgabeTDStatus(ByVal wbBsM As Workbook, ByRef wksTD As Worksheet, ByRef strTDAttribute() As String, ByRef rngTDAttribute() As Range, ByRef strDateinamen() As String, ByVal strProjekt As String)
-    def AusgabeTDStatus(self):
+    def output_status_TD(self):
         pass #TODO
 #       Dim lngDatensatz As Long                        'Long-Variable für aktuell zu schreibenden Datensatz
 #       Dim Verifikationskriterium As Verifikationskriterium    'Verifikationskriterium
@@ -2580,7 +2626,7 @@ class ATEStatus:
 #   Private Sub AusgabeTUAbgleich(ByRef intAuswertungTUs() As Integer, ByRef strAuswertungTUs() As String, _
 #                                            ByRef strAuswertungTUsFehlendeAAs As String, ByRef strAuswertungTUsFehlendeTFs As String, _
 #                                            ByRef intAusgabeAuswertungTUs As Integer, ByRef strAusgabeAuswertungTUs As String, ByRef strAusgabeAuswertungTUsDetails As String)
-    def AusgabeTUAbgleich(self):
+    def output_comparation_TU(self):
         pass #TODO
 #       '1) alle TF operativ und VK:TU = TF:TU
 #       '2) TF vorhanden, aber Status != operativ oder VK:TU != TF:TU
@@ -2701,6 +2747,9 @@ class ATEStatus:
 #   
 #   Private Sub AusgabeVerlauf(ByRef wksStatus As Worksheet, ByRef strFehlerVerlauf As String, ByVal intAuswahl As Integer)
     def ausgabe_verlauf(self):
+        # loop will be use to implement next two calls from the old code
+        #               Call AusgabeVerlauf(wksBsM, strFehlerATEVerlauf, 1)
+        #               Call AusgabeVerlauf(wksTD, strFehlerTDVerlauf, 2)
         pass
         #TODO
 #       Dim wksVerlauf As Worksheet

@@ -19,9 +19,9 @@ def test_db_info_einlesen_datei():
         from xls_management.ate.om.db_info import DBInfo
         from xls_management.utils.aux import all_in_sequence
         data = DBInfo(attributes=('License plate', 'Brand', 'Modell'))
-        success, error_string = data.einlesen_datei("Test")
+        success = data.einlesen_datei("Test")
         assert success is True
-        assert error_string == ""
+        assert data.error_msg == ""
         assert all_in_sequence(data.attributes, data.columns.keys())
         assert data.sheet_name == "Cars"
         assert len(data.columns["License plate"]) == 3
@@ -39,10 +39,10 @@ def test_db_info_einlesen_datei_error():
         from xls_management.ate.om.db_info import DBInfo
         from xls_management.utils.aux import all_in_sequence
         data = DBInfo(attributes=('Name', 'License plate', 'Brand', 'Modell'))
-        success, error_string = data.einlesen_datei("Test")
+        success = data.einlesen_datei("Test")
         assert success is False
-        assert error_string != ""
-        lines = error_string.splitlines()
+        assert data.error_msg != ""
+        lines = data.error_msg.splitlines()
         assert "People" in lines[0]
         assert "Name" in lines[1]
         for attribute in data.attributes[1:]:

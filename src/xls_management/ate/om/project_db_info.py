@@ -10,13 +10,29 @@ from xls_management.workbook import Workbook
 class ProjectDBInfo(DBInfo):
     def __init__(
         self,
-        project:str,
-        project_attributes: tuple[str]= (),
-        attributes: tuple[str]= (),  # ByRef strAttribute() As String
+        **args
     ):
-        super().__init__(project_attributes)
-        self.project = project
-        self.project_attributes = project_attributes
+        """
+        Project specific DBInfo
+        
+        :param self: ProjectDBInfo object reference
+        :param args: Next arguments are expected         
+                        db_info:DBInfo ,(optional) DBInfo object; attributes=db_info.attributes
+                        attributes: tuple[str], (optional) should be provided if no db_info object
+                        project:str,
+                        project_attributes: tuple[str]= (),
+        """
+        attributes:tuple[str]
+        if 'db_info' in args.keys():
+            attributes=args['db_info'].attributes
+        else:
+            assert 'attributes' in args.keys(), "attributes param should be provided"
+            attributes=args['attributes']
+        super().__init__(attributes=attributes)
+        assert 'project' in args.keys(),"project param should be provided"
+        self.project:str = args['project']
+        assert 'project_attributes' in args.keys(),"project_attributes param should be provided"
+        self.project_attributes:tuple[str] = args['project_attributes']
 
     
 #   Public Function EinlesenDatei_Projektspezifisch(ByVal strTitel As String, ByRef strAttribute() As String, ByRef rngAttribute() As Range, ByRef wbImport As Workbook, ByRef wksImport As Worksheet, ByRef strFehler As String, ByRef strDateinamen As String, _
@@ -50,6 +66,7 @@ class ProjectDBInfo(DBInfo):
 #       On Error Resume Next
 #       
 #       blnAttributeImport = False
+        attribute_import = False
 #       blnAttributeProjektImport = False
         project_attribute_import = False
 #       strFehlerGesamt = ""
@@ -169,7 +186,8 @@ class ProjectDBInfo(DBInfo):
                         f"Current found:{self.sheet_name}\n"
                         "Sollen die Datensätze zusammengeführt werden?"
                     ):
-                        self.append_current_to_erst_found(self.columns, first_find_columns)
+                        # append self.columns to first_find_columns
+                        first_find_columns = pd.concat([first_find_columns, self.columns], ignore_index=True)
 #                       End If
 #                   End If
 #               End If
@@ -198,9 +216,9 @@ class ProjectDBInfo(DBInfo):
         return first_find
 #   End Function
 
-    def append_current_to_erst_found(self, columns:pd.DataFrame, first_find_columns:pd.DataFrame):
-        pass
-        #TODO
+    #def append_current_to_first_found(self, columns:pd.DataFrame, first_find_columns:pd.DataFrame):
+    #    pass
+    #    #TOBEDEL not required, pd.concat was used instead
 #      'Alle Zeilen mit Einträgen durchlaufen und kopieren
 #      For lngWeitererFundZaehler = 1 To wksImport.UsedRange.Rows.Count - rngAttribute(1).Row
 #          If rngAttribute(1).Offset(lngWeitererFundZaehler, 0).Value <> "" Then

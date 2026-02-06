@@ -5,6 +5,7 @@ from xls_management.ate.project import project_combo_box
 from xls_management.tui.file_picker import path_from_file_picker
 from xls_management.tui.yes_no_form import yes_no_msgbox
 from xls_management.utils.color import Color, ansi_color
+from xls_management.ate.tracking import ATEStatus
 
 class MyShell(cmd.Cmd):
     intro = (
@@ -18,6 +19,11 @@ class MyShell(cmd.Cmd):
         """project <name>"""
         if arg:
             print(arg)
+
+    def do_status(self, arg):
+        """status"""
+        ate_status = ATEStatus()
+        ate_status.perform_status()
 
     def do_choose(self, arg):
         """choose a project from a list using a combobox"""
