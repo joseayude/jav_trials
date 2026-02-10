@@ -16,6 +16,83 @@ from importlib.metadata import version
 class ATEStatus:
 #
 #       Public Sub ATE_Status()
+    def __init__(
+        self,
+    ) -> None:
+        self.config=ATEConfig()
+        self.predecessor_id_is_used = False
+        self.project = None
+#       'Klasse Verifikationskriterien mit Absicherungsaufträgen
+#       Public verifikationKritList As New Collection
+        self.verification_criterion_list:dict = {}
+#       'Klasse AVW-Rohdaten
+#       Public BsMDatenList As New Collection
+        self.data_BsM:dict = {}
+#       'Klasse Testfälle
+#       Public testfallList As New Collection
+        self.test_case_list:dict = {}
+#       'Klasse FRU_Timing
+#       Public FRUTimingList As New Collection
+        self.timming_FRU_list:dict = {}
+#       'Klasse AVWVorgaenger
+#       Public AVWVorgaengerList As New Collection
+        self.predecessor_list_AVW:dict = {}
+#       'Flag für die Berücksichtigung von Vorgänger-IDs bei den AVW-Rohdaten
+#       Public blnAVWVorgaengerIDsVerwenden As Boolean
+        self.vorgaenger_ids_verwenden_AVW:bool
+#       'BsM_Status
+#       Dim wbBsM As Workbook                       'Workbook für BsM_Status
+#       Dim wksBsM As Worksheet                     'Worksheet für BsM_Status
+#       Dim strBsMAttribute() As String             'String-Array mit Attributen des Arbeitsblatts BsM_Status
+#       Dim rngBsMAttribute() As Range              'Range-Array mit Attributen des Arbeitsblatts BsM_Status
+        self.status_BsM:DBInfo
+#       'TD_Status
+#       Dim wbTD As Workbook                        'Workbook für TD_Status
+#       Dim wksTD As Worksheet                      'Worksheet für TD_Status
+#       Dim strTDAttribute() As String              'String-Array mit Attributen des Arbeitsblatts TD_Status
+#       Dim rngTDAttribute() As Range               'Range-Array mit Attributen des Arbeitsblatts TD_Status
+        self.status_TD:DBInfo
+#       'AVW_Rohdaten - Projekt
+#       Dim wbAVW As Workbook                       'Workbook für AVW_Rohdaten
+#       Dim wksAVW As Worksheet                     'Worksheet für AVW_Rohdaten
+#       Dim strAVWAttribute() As String             'String-Array mit Attributen des Arbeitsblatts AVW_Rohdaten
+#       Dim rngAVWAttribute() As Range              'Range-Array mit Attributen des Arbeitsblatts AVW_Rohdaten
+#       Dim strAVWAttributeMEB21() As String        'String-Array mit Attributen des Arbeitsblatts AVW_Rohdaten für MEB21
+#       Dim rngAVWAttributeMEB21() As Range         'Range-Array mit Attributen des Arbeitsblatts AVW_Rohdaten für MEB21
+        self.row_data_AVW:DBInfo|ProjectDBInfo
+#       'AVW_Rohdaten - Master
+#       Dim wbAVWMaster As Workbook                 'Workbook für AVWMaster_Rohdaten
+#       Dim wksAVWMaster As Worksheet               'Worksheet für AVWMaster_Rohdaten
+#       Dim strAVWMasterAttribute() As String       'String-Array mit Attributen des Arbeitsblatts AVWMaster_Rohdaten
+#       Dim rngAVWMasterAttribute() As Range        'Range-Array mit Attributen des Arbeitsblatts AVWMaster_Rohdaten
+        self.master_row_data_AVW:DBInfo
+#       'TDVKs (Tesdesigns - Verifikationskriterium)
+#       Dim wbTDVK As Workbook                      'Workbook für TDs - Verifikationskriterien
+#       Dim wksTDVK As Worksheet                    'Worksheet für TDs - Verifikationskriterium
+#       Dim strTDVKAttribute() As String            'String-Array mit Attributen des Arbeitsblatts TDs - Verifikationskriterium
+#       Dim rngTDVKAttribute() As Range             'Range-Array mit Attributen des Arbeitsblatts TDs - Verifikationskriterium
+        self.test_design_verification_criterion:DBInfo
+#       'TDAAs (Tesdesigns - Absicherungsaufträge)
+#       Dim wbTDAA As Workbook                      'Workbook für TDs - Absicherungsaufträge
+#       Dim wksTDAA As Worksheet                    'Worksheet für TDs - Absicherungsaufträge
+#       Dim strTDAAAttribute() As String            'String-Array mit Attributen des Arbeitsblatts TDs - Absicherungsaufträge
+#       Dim rngTDAAAttribute() As Range             'Range-Array mit Attributen des Arbeitsblatts TDs - Absicherungsaufträge
+        self.test_design_assurance_contracts:DBInfo
+#       'TF (Testfälle)
+#       Dim wbTF As Workbook                        'Workbook für Testfälle
+#       Dim wksTF As Worksheet                      'Worksheet für Testfälle
+#       Dim strTFAttribute() As String              'String-Array mit Attributen des Arbeitsblatts Testfälle
+#       Dim rngTFAttribute() As Range               'Range-Array mit Attributen des Arbeitsblatts Testfälle
+        self.test_case:DBInfo
+#       'FRUTiming
+#       Dim wbFRUTiming As Workbook                 'Workbook für FRU-Timing
+#       Dim wksFRUTiming As Worksheet               'Worksheet für FRU-Timing
+#       Dim strFRUTimingAttribute() As String       'String-Array mit Attributen des Arbeitsblattes für FRU-Timing
+#       Dim rngFRUTimingAttribute() As Range        'Range-Array mit Attributen des Arbeitsblattes für FRU-Timing
+        self.timming_FRU:DBInfo
+        self.import_attribute = [False, False, False, False, False, False]
+        self.errors:str = ''
+
     def perform_status(self):
 #       'Allgemein
 #       Dim strFehlerGesamt As String               'String für Gesamtfehlerausgabe
@@ -190,83 +267,6 @@ class ATEStatus:
 #       Unload BoxAuswahlProjekt
 #       End Sub
 #
-    def __init__(
-        self,
-    ) -> None:
-        self.config=ATEConfig()
-        self.predecessor_id_is_used = False
-        self.project = None
-#       'Klasse Verifikationskriterien mit Absicherungsaufträgen
-#       Public verifikationKritList As New Collection
-        self.verification_criterion_list:dict = {}
-#       'Klasse AVW-Rohdaten
-#       Public BsMDatenList As New Collection
-        self.data_BsM:dict = {}
-#       'Klasse Testfälle
-#       Public testfallList As New Collection
-        self.test_case_list:dict = {}
-#       'Klasse FRU_Timing
-#       Public FRUTimingList As New Collection
-        self.timming_FRU_list:dict = {}
-#       'Klasse AVWVorgaenger
-#       Public AVWVorgaengerList As New Collection
-        self.predecessor_list_AVW:dict = {}
-#       'Flag für die Berücksichtigung von Vorgänger-IDs bei den AVW-Rohdaten
-#       Public blnAVWVorgaengerIDsVerwenden As Boolean
-        self.vorgaenger_ids_verwenden_AVW:bool
-#       'BsM_Status
-#       Dim wbBsM As Workbook                       'Workbook für BsM_Status
-#       Dim wksBsM As Worksheet                     'Worksheet für BsM_Status
-#       Dim strBsMAttribute() As String             'String-Array mit Attributen des Arbeitsblatts BsM_Status
-#       Dim rngBsMAttribute() As Range              'Range-Array mit Attributen des Arbeitsblatts BsM_Status
-        self.status_BsM:DBInfo
-#       'TD_Status
-#       Dim wbTD As Workbook                        'Workbook für TD_Status
-#       Dim wksTD As Worksheet                      'Worksheet für TD_Status
-#       Dim strTDAttribute() As String              'String-Array mit Attributen des Arbeitsblatts TD_Status
-#       Dim rngTDAttribute() As Range               'Range-Array mit Attributen des Arbeitsblatts TD_Status
-        self.status_TD:DBInfo
-#       'AVW_Rohdaten - Projekt
-#       Dim wbAVW As Workbook                       'Workbook für AVW_Rohdaten
-#       Dim wksAVW As Worksheet                     'Worksheet für AVW_Rohdaten
-#       Dim strAVWAttribute() As String             'String-Array mit Attributen des Arbeitsblatts AVW_Rohdaten
-#       Dim rngAVWAttribute() As Range              'Range-Array mit Attributen des Arbeitsblatts AVW_Rohdaten
-#       Dim strAVWAttributeMEB21() As String        'String-Array mit Attributen des Arbeitsblatts AVW_Rohdaten für MEB21
-#       Dim rngAVWAttributeMEB21() As Range         'Range-Array mit Attributen des Arbeitsblatts AVW_Rohdaten für MEB21
-        self.row_data_AVW:DBInfo|ProjectDBInfo
-#       'AVW_Rohdaten - Master
-#       Dim wbAVWMaster As Workbook                 'Workbook für AVWMaster_Rohdaten
-#       Dim wksAVWMaster As Worksheet               'Worksheet für AVWMaster_Rohdaten
-#       Dim strAVWMasterAttribute() As String       'String-Array mit Attributen des Arbeitsblatts AVWMaster_Rohdaten
-#       Dim rngAVWMasterAttribute() As Range        'Range-Array mit Attributen des Arbeitsblatts AVWMaster_Rohdaten
-        self.master_row_data_AVW:DBInfo
-#       'TDVKs (Tesdesigns - Verifikationskriterium)
-#       Dim wbTDVK As Workbook                      'Workbook für TDs - Verifikationskriterien
-#       Dim wksTDVK As Worksheet                    'Worksheet für TDs - Verifikationskriterium
-#       Dim strTDVKAttribute() As String            'String-Array mit Attributen des Arbeitsblatts TDs - Verifikationskriterium
-#       Dim rngTDVKAttribute() As Range             'Range-Array mit Attributen des Arbeitsblatts TDs - Verifikationskriterium
-        self.test_design_verification_criterion:DBInfo
-#       'TDAAs (Tesdesigns - Absicherungsaufträge)
-#       Dim wbTDAA As Workbook                      'Workbook für TDs - Absicherungsaufträge
-#       Dim wksTDAA As Worksheet                    'Worksheet für TDs - Absicherungsaufträge
-#       Dim strTDAAAttribute() As String            'String-Array mit Attributen des Arbeitsblatts TDs - Absicherungsaufträge
-#       Dim rngTDAAAttribute() As Range             'Range-Array mit Attributen des Arbeitsblatts TDs - Absicherungsaufträge
-        self.test_design_assurance_contracts:DBInfo
-#       'TF (Testfälle)
-#       Dim wbTF As Workbook                        'Workbook für Testfälle
-#       Dim wksTF As Worksheet                      'Worksheet für Testfälle
-#       Dim strTFAttribute() As String              'String-Array mit Attributen des Arbeitsblatts Testfälle
-#       Dim rngTFAttribute() As Range               'Range-Array mit Attributen des Arbeitsblatts Testfälle
-        self.test_case:DBInfo
-#       'FRUTiming
-#       Dim wbFRUTiming As Workbook                 'Workbook für FRU-Timing
-#       Dim wksFRUTiming As Worksheet               'Worksheet für FRU-Timing
-#       Dim strFRUTimingAttribute() As String       'String-Array mit Attributen des Arbeitsblattes für FRU-Timing
-#       Dim rngFRUTimingAttribute() As Range        'Range-Array mit Attributen des Arbeitsblattes für FRU-Timing
-        self.timming_FRU:DBInfo
-        self.import_attribute = [False, False, False, False, False, False]
-        self.errors:str = ''
-
     def initialized(self) -> bool:
 #   Private Function ATE_Status_Initializer(ByRef wbAVW As Workbook, ByRef wbAVWMaster As Workbook, ByRef wbTDVK As Workbook, ByRef wbTDAA As Workbook, ByRef wbTF As Workbook, ByRef wbFRUTiming As Workbook, _
 #           ByRef wksAVW As Worksheet, ByRef wksAVWMaster As Worksheet, ByRef wksTDVK As Worksheet, ByRef wksTDAA As Worksheet, ByRef wksTF As Worksheet, ByRef wksFRUTiming As Worksheet, _
@@ -323,6 +323,7 @@ class ATEStatus:
 #           strAVWAttributeMEB21(1) = "Temp11_Auswahlfeld"
             attributes_MBE21_AVW:tuple[str] = ('Temp11_Auswahlfeld',)
             self.info_AVW = ProjectDBInfo(
+                path=self.config.config['default_path'],
                 db_info=self.info_AVW,
                 project=self.project,
                 project_attributes=attributes_MBE21_AVW,
@@ -394,6 +395,7 @@ class ATEStatus:
 #           strTDVKAttribute(5) = "Aktion"
         if self.import_attribute[0]:
             self.info_TDVK = DBInfo(
+                path=self.config.config['default_path'],
                 attributes = (
                     "ID",
                     "Basierend auf der Anforderung",
@@ -440,6 +442,7 @@ class ATEStatus:
 #           strTDAAAttribute(4) = "Testinstanz"
 #           strTDAAAttribute(5) = "Testumgebungstyp"
             self.info_TDAA = DBInfo(
+                path=self.config.config['default_path'],
                 attributes = (
                     "ID",
                     "Enthalten in",
@@ -488,6 +491,7 @@ class ATEStatus:
 #           strTFAttribute(7) = "Testinstanz"
         if self.import_attribute[2]:
             self.info_TF = DBInfo(
+                path=self.config.config['default_path'],
                 attributes = (
                     "ID",
                     "Status",
@@ -535,6 +539,7 @@ class ATEStatus:
 #           strFRUTimingAttribute(3) = "Umsetzer"
 #           strFRUTimingAttribute(4) = "FE_Meilenstein" 'vorher "Zuordnung zu I-Stufe"
             self.info_fru_timming = DBInfo(
+                path=self.config.config['default_path'],
                 attributes = (
                     "FeatureName",
                     "Reifegrad",  #vorher "RG"
@@ -581,6 +586,7 @@ class ATEStatus:
 #               strAVWMasterAttribute(2) = "temp1_Text"
 #               strAVWMasterAttribute(3) = "Kommentar Redaktionskreis"
                 self.info_AVW_master = DBInfo(
+                    path=self.config.config['default_path'],
                     attributes = (
                         "ID",
                         "temp1_Text",

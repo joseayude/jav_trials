@@ -6,13 +6,15 @@ import pandas as pd
 
 class DBInfo:
     def __init__(
-        self,                        #
+        self,
+        path = ".",                      #
         #workbook:Workbook,           # ByRef wbImport As Workbook
         #sheet_name:str,              # ByRef wksImport As Worksheet
            # sheet_name and workbook is enougth to be able to load the data
         #columns:pd.DataFrame,        # ByRef rngAttribute() As Range
         attributes: tuple[str]= (),  # ByRef strAttribute() As String
     ):
+        self.path = path
         self.workbook:Workbook|None = None
         self.sheet_name:str = ""
         self.attributes = attributes
@@ -33,7 +35,11 @@ class DBInfo:
            
         """ 
         self.error_msg = ""
-        import_file_path = path_from_file_picker(location=".", title= f"{titel} auswählen")
+        import_file_path = path_from_file_picker(
+            location=self.path,
+            title= f"{titel} auswählen"
+        )
+        self.path = (import_file_path.parent).as_uri()
         if import_file_path is not None:
             workbook: Workbook = Workbook(import_file_path)
             import_file_name = Path(workbook.file_path).name

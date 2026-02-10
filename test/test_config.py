@@ -10,11 +10,10 @@ def test_config_create(monkeypatch):
     from xls_management.config import ATEConfig
     ate = ATEConfig()
     assert 'BsM_workbook' in ate.config.keys()
-    assert ate.config['BsM_workbook'] == (
+    assert ate.config['BsM_workbook'] == str(
         HOMEPATH /
         'vw/data/ATE-Status_Berichtsversion.xlsm'
-    ).as_uri()
-
+    )
 def test_config_open(monkeypatch):
     clean("test/data/config.yml")
     assert (working_path / "test/data/config.yml").exists() is False
@@ -22,18 +21,18 @@ def test_config_open(monkeypatch):
     from xls_management.config import ATEConfig
     ate = ATEConfig()
     assert 'BsM_workbook' in ate.config.keys()
-    assert ate.config['BsM_workbook'] == (
+    assert ate.config['BsM_workbook'] == str(
         HOMEPATH /
         'vw/data/ATE-Status_Berichtsversion.xlsm'
-    ).as_uri()
+    )
     del(ate)
     assert (working_path / "test/data/config.yml").exists() is True
     ate = ATEConfig()
     assert 'BsM_workbook' in ate.config.keys()
-    assert ate.config['BsM_workbook'] == (
+    assert ate.config['BsM_workbook'] == str(
         HOMEPATH /
         'vw/data/ATE-Status_Berichtsversion.xlsm'
-    ).as_uri()
+    )
 
 
 def clean(working_file):

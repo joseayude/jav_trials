@@ -16,9 +16,12 @@ class ATEConfig():
 
     def set_default_config_file(self) -> None:
         self.config = {}
-        self.config['BsM_workbook'] = (
+        self.config['BsM_workbook'] = str(
             HOMEPATH / 'vw/data/ATE-Status_Berichtsversion.xlsm'
-        ).as_uri()
+        )
+        self.config['default_path'] = str(
+            HOMEPATH / 'vw/in'
+        )
         yaml_str = yaml.dump(self.config)
         with open(ATEConfig.config_file, 'w') as file:
             file.writelines(yaml_str)
