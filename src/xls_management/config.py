@@ -16,12 +16,24 @@ class ATEConfig():
 
     def set_default_config_file(self) -> None:
         self.config = {}
-        self.config['BsM_workbook'] = str(
-            HOMEPATH / 'vw/data/ATE-Status_Berichtsversion.xlsm'
+        self.config['workbook_path_BsM'] = str(
+            HOMEPATH / 'vw/data/ATE-Status_Berichtsversion.xlsx',
         )
         self.config['default_path'] = str(
             HOMEPATH / 'vw/in'
         )
+        self.config['blacklist_name'] = 'Blacklist'
         yaml_str = yaml.dump(self.config)
         with open(ATEConfig.config_file, 'w') as file:
             file.writelines(yaml_str)
+        self.config['blacklist_attribute'] = 'LAH, die ignoriert werden sollen'
+        yaml_str = yaml.dump(self.config)
+        with open(ATEConfig.config_file, 'w') as file:
+            file.writelines(yaml_str)
+    
+    def get(self, *args, **kvargs):
+        return self.config.get(*args, **kvargs)
+    
+    def erase(self):
+        if(ATEConfig.config_file.exists()):
+            ATEConfig.config_file.unlink()
