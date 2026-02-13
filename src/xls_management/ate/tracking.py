@@ -9,6 +9,8 @@ from xls_management.config import ATEConfig
 
 from importlib.metadata import version
 
+from xls_management.workbook import Workbook
+
 #Option Explicit
 #
 #'Dokumentenabfrage einzeln \\vw.vwg\vwdfs\K-E\EF\1508\Groups\EFBS2_Konsulter\Testmanagement_EFDB\Projekt MQB48W\Testdesign\Statistik_TD_TS\
@@ -92,6 +94,11 @@ class ATEStatus:
         self.timming_FRU:DBInfo
         self.import_attribute = [False, False, False, False, False, False]
         self.errors:str = ''
+#       'BsM-Status wird separat im Workbook des Makros erzeugt
+#       Set wbBsM = ThisWorkbook
+        file_path_BsM:str|None = self.config.get('workbook_path_BsM')
+        assert file_path_BsM is not None
+        self.workbook_BsM = Workbook(file_path=file_path_BsM)
 
     def perform_status(self):
 #       'Allgemein
@@ -110,8 +117,6 @@ class ATEStatus:
 #       'Makro-Version
 #       strVersionMakro = "ATE-Status V015F6" & vbCrLf & "Programmiert von Alexander Kuhlicke, Tagueri AG 2024"
 #       
-#       'BsM-Status wird separat im Workbook des Makros erzeugt
-#       Set wbBsM = ThisWorkbook
 #       self.info_BsM = DBInfo()
 #       'Befüllung der Projektliste
 #       strProjekte(0) = "leer"
@@ -148,7 +153,7 @@ class ATEStatus:
         if self.initialized():
 #               'LAH-Blacklist einlesen
 #               Call EinlesenLAHBlacklist(wbBsM, strLAHBlacklist)
-            self.read_black_list()
+            self.read_blacklist_LAHB()
 #               'Testdesigns - Verifikationskriterien einlesen
 #               Call EinlesenTDVKs(wksTDVK, strTDVKAttribute, rngTDVKAttribute)
             self.read_TDVKs()
@@ -323,7 +328,7 @@ class ATEStatus:
 #           strAVWAttributeMEB21(1) = "Temp11_Auswahlfeld"
             attributes_MBE21_AVW:tuple[str] = ('Temp11_Auswahlfeld',)
             self.info_AVW = ProjectDBInfo(
-                path=self.config.config['default_path'],
+                path=self.config.get('default_path', '.'),
                 db_info=self.info_AVW,
                 project=self.project,
                 project_attributes=attributes_MBE21_AVW,
@@ -395,7 +400,7 @@ class ATEStatus:
 #           strTDVKAttribute(5) = "Aktion"
         if self.import_attribute[0]:
             self.info_TDVK = DBInfo(
-                path=self.config.config['default_path'],
+                path=self.config.get('default_path', '.'),
                 attributes = (
                     "ID",
                     "Basierend auf der Anforderung",
@@ -442,7 +447,7 @@ class ATEStatus:
 #           strTDAAAttribute(4) = "Testinstanz"
 #           strTDAAAttribute(5) = "Testumgebungstyp"
             self.info_TDAA = DBInfo(
-                path=self.config.config['default_path'],
+                path=self.config.get('default_path', '.'),
                 attributes = (
                     "ID",
                     "Enthalten in",
@@ -491,7 +496,7 @@ class ATEStatus:
 #           strTFAttribute(7) = "Testinstanz"
         if self.import_attribute[2]:
             self.info_TF = DBInfo(
-                path=self.config.config['default_path'],
+                path=self.config.get('default_path', '.'),
                 attributes = (
                     "ID",
                     "Status",
@@ -539,7 +544,7 @@ class ATEStatus:
 #           strFRUTimingAttribute(3) = "Umsetzer"
 #           strFRUTimingAttribute(4) = "FE_Meilenstein" 'vorher "Zuordnung zu I-Stufe"
             self.info_fru_timming = DBInfo(
-                path=self.config.config['default_path'],
+                path=self.config.get('default_path', '.'),
                 attributes = (
                     "FeatureName",
                     "Reifegrad",  #vorher "RG"
@@ -586,7 +591,7 @@ class ATEStatus:
 #               strAVWMasterAttribute(2) = "temp1_Text"
 #               strAVWMasterAttribute(3) = "Kommentar Redaktionskreis"
                 self.info_AVW_master = DBInfo(
-                    path=self.config.config['default_path'],
+                path=self.config.get('default_path', '.'),
                     attributes = (
                         "ID",
                         "temp1_Text",
@@ -694,8 +699,7 @@ class ATEStatus:
 #   End Function
 #   
 #   Private Sub EinlesenLAHBlacklist(ByVal wbBsM As Workbook, ByRef strLAHBlacklist() As String)
-    def read_black_list(self):
-        pass #TODO
+    def read_blacklist_LAHB(self):
 #       Dim strWKSBlacklist As String           'String für Namen des Blacklist-Worksheets
 #       Dim wksBlacklist As Worksheet           'Worksheet für Blacklist
 #       Dim strAttributBlacklist As String      'String für Attribut der Blacklist
@@ -708,41 +712,76 @@ class ATEStatus:
 #       On Error Resume Next
 #       
 #       strWKSBlacklist = "Blacklist"
+        blacklist_name = self.config.get('blacklist_name', 'Blacklist')
 #       strAttributBlacklist = "LAH, die ignoriert werden sollen"
+        blacklist_attribute = self.config.get(
+            'blacklist_attribute',
+            'LAH, die ignoriert werden sollen'
+        )
 #       lngBlacklist = 0
+        blacklist_len = 0
 #       ReDim strLAHBlacklist(0)
+        self.blacklist_LAHB = tuple()
 #       
 #       Set wksBlacklist = wbBsM.Sheets(strWKSBlacklist)
+        blacklist_data_frame = self.workbook_BsM.sheets(blacklist_name)
 #       If Not wksBlacklist Is Nothing Then
+        if blacklist_data_frame is not None:
 #           Set rngBlacklist = wksBlacklist.Cells.Find(strAttributBlacklist, lookat:=xlWhole)
 #           If Not rngBlacklist Is Nothing Then
+            if len(blacklist_data_frame) > 0 and blacklist_attribute in blacklist_data_frame.columns:
 #               For lngZeile = 1 To wksBlacklist.UsedRange.Rows.Count - rngBlacklist.Row
+                candidates = blacklist_data_frame[blacklist_attribute]
+                self.blacklist_LAHB = tuple(
+                    candidates[row]
+                        for row in range(0, len(blacklist_data_frame))
+                        if candidates[row] not in candidates[0:(row-1)]
+                )               
+                #for row in range(0, len(blacklist_data_frame)):
 #                   blnBlacklistItemErfasst = False
+                #    blacklist_item_reached = False
 #                   If rngBlacklist.Offset(lngZeile, 0) <> "" Then
+                #    if blacklist_data_frame[blacklist_attribute][row] != "":
 #                       If lngBlacklist > 0 Then
+                #        if blacklist_len > 0:
 #                           For lngBlacklistErfasst = LBound(strLAHBlacklist, 1) To UBound(strLAHBlacklist, 1)
+                #            for blacklist_item in blacklist_data_frame[blacklist_attribute]:
 #                               If strLAHBlacklist(lngBlacklistErfasst) = rngBlacklist.Offset(lngZeile, 0) Then
+                #                if self.blacklist_LAHB[-1] == blacklist_item:
 #                                   blnBlacklistItemErfasst = True
+                #                    blacklist_item_reached = True
 #                                   Exit For
+                #                    break
 #                               End If
 #                           Next lngBlacklistErfasst
 #                           If blnBlacklistItemErfasst = False Then
+                #            if blacklist_item_reached == False:
 #                               lngBlacklist = lngBlacklist + 1
+                #                blacklist_len += 1
 #                               ReDim Preserve strLAHBlacklist(1 To lngBlacklist)
 #                               strLAHBlacklist(lngBlacklist) = rngBlacklist.Offset(lngZeile, 0)
+                #                self.blacklist_LAHB.append(blacklist_data_frame[blacklist_attribute][row])
 #                           End If
 #                       Else
 #                           lngBlacklist = 1
+                #            blacklist_len = 1
+                
 #                           ReDim strLAHBlacklist(1 To lngBlacklist)
 #                           strLAHBlacklist(lngBlacklist) = rngBlacklist.Offset(lngZeile, 0)
+                #            self.blacklist_LAHB.append(blacklist_data_frame[blacklist_attribute][row])
 #                       End If
 #                   End If
 #               Next lngZeile
+
 #           Else
+            else:
 #               MsgBox "Attribut der Blacklist """ & strAttributBlacklist & """ ist nicht vorhanden!"
+                msgbox(f'Attribut der Blacklist "{blacklist_attribute}" is nicht vorhanden!')
 #           End If
 #       Else
+        else:
 #           MsgBox "Arbeitsblatt """ & strWKSBlacklist & """ ist nicht vorhanden!"
+            msgbox(f'Arbeitsblatt "{blacklist_name}" is nicht vorhanden!')
 #       End If
 #   End Sub
 #   
