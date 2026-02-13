@@ -22,7 +22,8 @@ class MyShell(cmd.Cmd):
 
     def do_status(self, arg):
         """status"""
-        ate_status = ATEStatus()
+        ate_status:ATEStatus|None = ATEStatus()
+        assert ate_status.config is not None
         ate_status.perform_status()
 
     def do_choose(self, arg):
@@ -50,6 +51,14 @@ class MyShell(cmd.Cmd):
         file_path = path_from_file_picker(location=location, title="Choose ATE input file")
         print(f"file {ansi_color(str(file_path),Color.GREEN)} was chosen")
 
+    def do_reset(self, arg):
+        """resets the config file to default values"""
+        ate_status:ATEStatus|None = ATEStatus()
+        if yes_no_msgbox("This will remove. Do you want to continue?"):
+            ate_status.erase()
+            print("Config file reset to default values.")
+        else:
+            print("Config file reset cancelled.")
     # Tab completion for 'project'
     def complete_project(self, text, line, begidx, endidx):
         """
