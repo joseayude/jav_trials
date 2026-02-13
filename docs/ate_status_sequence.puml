@@ -1,0 +1,48 @@
+@startuml
+participant "BoxAuswahlProjekt (UI)" as UI
+participant "ATE_Status" as ATE
+participant "ATE_Status_Initializer" as Init
+participant "EinlesenLAHBlacklist" as LAH
+participant "EinlesenTDVKs" as TDVK
+participant "EinlesenTDAAs" as TDAA
+participant "EinlesenTFs" as TF
+participant "EinlesenFRUTiming" as FRU
+participant "EinlesenAVWRohdaten" as AVW
+participant "EinlesenAVWVorgaengerRohdaten" as AVWMaster
+participant "EinlesenAVWNachfolgerRohdaten" as AVWNach
+participant "AusgabeATEStatus" as OutATE
+participant "AusgabeTDStatus" as OutTD
+participant "SchliessenWb" as Close
+participant "AusgabeVerlauf" as Verlauf
+participant "ATE_Status_Deinitializer" as Deinit
+
+UI -> ATE: Show BoxAuswahlProjekt
+ATE -> UI: (user selection) boolAuswahlGetroffen?
+alt boolAuswahlGetroffen
+  ATE -> Init: ATE_Status_Initializer(...)
+  Init --> ATE: returns True/False
+  alt initializer = True
+    ATE -> LAH: EinlesenLAHBlacklist(...)
+    ATE -> TDVK: EinlesenTDVKs(...)
+    ATE -> TDAA: EinlesenTDAAs(...)
+    ATE -> TF: EinlesenTFs(...)
+    ATE -> FRU: EinlesenFRUTiming(...)
+    alt blnAVWVorgaengerIDsVerwenden = False
+      ATE -> AVW: EinlesenAVWRohdaten(...)
+    else blnAVWVorgaengerIDsVerwenden = True
+      ATE -> AVWMaster: EinlesenAVWVorgaengerRohdaten(...)
+      ATE -> AVWNach: EinlesenAVWNachfolgerRohdaten(...)
+    end
+    ATE -> OutATE: AusgabeATEStatus(...)
+    ATE -> OutTD: AusgabeTDStatus(...)
+    ATE -> Close: SchliessenWb(...)
+    ATE -> Verlauf: AusgabeVerlauf(wksBsM, strFehlerATEVerlauf, 1)
+    ATE -> Verlauf: AusgabeVerlauf(wksTD, strFehlerTDVerlauf, 2)
+    ATE -> ATE: MsgBox success / possible warnings
+  else
+    ATE -> ATE: MsgBox strFehlerGesamt (initializer failed)
+  end
+  ATE -> Deinit: ATE_Status_Deinitializer(...)
+end
+ATE -> UI: Unload BoxAuswahlProjekt
+@enduml
