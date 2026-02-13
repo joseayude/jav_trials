@@ -50,7 +50,7 @@ class Workbook:
             elif index < len(names):
                 name = names[index]
             if name in names:
-                df = pd.read_excel(self.file_path, sheet_name=names[index])
+                df = pd.read_excel(self.file_path, sheet_name=name)
             else:
                 raise IndexError(f"{index} is wrong value for {', '.join(names)}")
         except FileNotFoundError:
