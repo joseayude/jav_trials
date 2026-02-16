@@ -1,6 +1,7 @@
 import re
 from xls_management.ate.om.db_info import DBInfo 
 from xls_management.ate.om.project_db_info import ProjectDBInfo
+from xls_management.ate.om.testfaelle import Testfaelle
 from xls_management.ate.om.verificationskriterium  import Verificationskriterium
 from xls_management.ate.om.avw_vorganenger import AVWVorgaenger
 from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
@@ -29,13 +30,13 @@ class ATEStatus:
         self.project = None
 #       'Klasse Verifikationskriterien mit Absicherungsaufträgen
 #       Public verifikationKritList As New Collection
-        self.verification_criterion_list:dict = {}
+        self.verification_criteria:dict = {}
 #       'Klasse AVW-Rohdaten
 #       Public BsMDatenList As New Collection
         self.data_BsM:dict = {}
 #       'Klasse Testfälle
 #       Public testfallList As New Collection
-        self.test_case_list:dict = {}
+        self.test_cases:dict = {}
 #       'Klasse FRU_Timing
 #       Public FRUTimingList As New Collection
         self.timming_FRU_list:dict = {}
@@ -808,7 +809,7 @@ class ATEStatus:
                 # initialization moved to Verificationskriterium.__init__
 #               'Erfasstes Verifikationskriterium in globaler Verifikationskriterien-Liste hinzufügen
 #               verifikationKritList.Add Item:=verifikationKrit, Key:=verifikationKrit.VK_ID
-                self.verification_criterion_list[verification_criterion.vk_id] = verification_criterion
+                self.verification_criteria[verification_criterion.vk_id] = verification_criterion
 #       '    End If
 #           'Fortschritt anzeigen
 #           If lngZeile Mod 100 = 0 Then
@@ -836,7 +837,7 @@ class ATEStatus:
                 #  so we can check this before creating the security order 
                 verification_criterion_id = str(self.info_TDAA.columns['Enthalten in'][row])
                 re.sub(r'[\?r]', '', verification_criterion_id)
-                verification_criterion = self.verification_criterion_list.get(verification_criterion_id, None)
+                verification_criterion = self.verification_criteria.get(verification_criterion_id, None)
                 if verification_criterion is not None:
 #               'Neuen Absicherungsauftrag anlegen
 #               Set absicherungsAuftr = New Absicherungsauftraege
@@ -860,7 +861,7 @@ class ATEStatus:
 #                   Verifikationskriterium.Absicherungsauftraege.Add Item:=absicherungsAuftr, Key:=absicherungsAuftr.abs_ID
 #               End If
                     verification_criterion.absicherungsauftraege[security_order.abs_id] = security_order
-                    self.verification_criterion_list[verification_criterion_id] = verification_criterion
+                    self.verification_criteria[verification_criterion_id] = verification_criterion
 #           End If
 #           'Fortschritt anzeigen
             ####TODO: Show progress
@@ -872,7 +873,6 @@ class ATEStatus:
 #   
 #   Private Sub EinlesenTFs(ByVal wksTF As Worksheet, ByRef strTFAttribute() As String, ByRef rngTFAttribute() As Range)
     def read_TFs(self):
-        pass #TODO
 #       Dim lngZeile As Long                            'Long-Zähler für aktuell einzulesende Zeile
 #       Dim testfall As Testfaelle                      'Klasse Testfaelle
 #       Dim anfIDs As String                            'String für eingelesene Anforderungs-IDs
@@ -884,50 +884,24 @@ class ATEStatus:
 #       'Testfälle einlesen
 #       'TFs: #1: ID, #2: Status, #3: Testfallname, #4: Sonstige-Varianten, #5: Basierend auf Testdesign, #6: verifiziert, #7: Testinstanz
 #       For lngZeile = 1 To wksTF.UsedRange.Rows.Count - rngTFAttribute(1).Row
+        for row in range(0,len(self.info_TF.columns)):
 #       '    If rngTFAttribute(2).Offset(lngZeile, 0).Value = "Operativ" Then
+            if self.info_TF.columns['Status'][row] == 'Operativ':
 #               'Neuen Testfall anlegen
+                # moved to Testfaelle.__init__
 #               Set testfall = New Testfaelle
-#               'Testfall-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#               testfall.TF_ID = Replace(Replace(rngTFAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-#               'Status Testfall einlesen
-#               testfall.TF_Status = rngTFAttribute(2).Offset(lngZeile, 0).Value
-#               'Testfall-Name einlesen
-#               testfall.TF_Name = rngTFAttribute(3).Offset(lngZeile, 0).Value
-#               'Testinstanz einlesen
-#               testfall.TF_Testinstanz = rngTFAttribute(7).Offset(lngZeile, 0).Value
-#               'Testumgebungstyp einlesen
-#               testfall.TF_Testumgebungstyp = Replace(rngTFAttribute(4).Offset(lngZeile, 0).Value, "Testumgebungstyp: ", "")
-#               
-#               'Alle direkt mit dem aktuellen Testfall verknüpften Anforderungs-IDs erfassen
-#               'direkte Testfälle nicht berücksichtigen!
-#               'Anforderungs-IDs einlesen
-#               'anfIDs = rngTFAttribute(6).Offset(lngZeile, 0).Value
-#               'Anforderungs-IDs nach Kommas trennen
-#               'Set idList = EinlesenGetrennteWerteKomma(anfIDs)
-#               'Anforderungs-IDs übernehmen
-#               'Set testfall.TF_anfIDs = idList
-#               'Neue Sammlung für Anforderungs-IDs anlegen - Notwendig, wenn Liste der direkten Testfälle nicht übernommen wird
-#               Set testfall.TF_anfIDs = New Collection
-#               
-#               'Alle über das Testdesign mit dem aktuellen Testfall verknüpften Anforderungs-IDs erfassen
-#               'ID des übergeordneten Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#               testfall.TF_VK_ID = Replace(Replace(rngTFAttribute(5).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-#               'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
-#               Set Verifikationskriterium = New Verifikationskriterium
-#               Set Verifikationskriterium = FindeVK(verifikationKritList, testfall.TF_VK_ID)
-#               If Not Verifikationskriterium Is Nothing Then
-#                   'Anforderungs-ID aufnehmen
-#                   For Each varAnfID In Verifikationskriterium.anf_ids
-#                       testfall.addElementID (varAnfID)
-#                   Next varAnfID
-#                   'Testfall aufnehmen
-#                   Verifikationskriterium.VK_Testfaelle.Add Item:=testfall, Key:=testfall.TF_ID
-#               End If
+                test_case = Testfaelle(
+                    self.info_TF.columns,
+                    row,
+                    self.verification_criteria,
+                )
 #               
 #               'Erfassten Testfall in globaler Testfall-Liste hinzufügen
 #               testfallList.Add Item:=testfall, Key:=testfall.TF_ID
+                self.test_cases[test_case.id] = test_case
 #       '    End If
 #           'Fortschritt anzeigen
+            ###TODO: Show progress
 #           If lngZeile Mod 100 = 0 Then
 #               Debug.Print "Testfälle einlesen: " & lngZeile & "/" & wksTF.UsedRange.Rows.Count - rngTFAttribute(1).Row
 #           End If
