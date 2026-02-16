@@ -1,7 +1,7 @@
 import re
 from xls_management.ate.om.db_info import DBInfo 
 from xls_management.ate.om.project_db_info import ProjectDBInfo
-from xls_management.ate.om.testfaelle import TestCase
+from xls_management.ate.om.test_case import TestCase
 from xls_management.ate.om.verificationskriterium  import Verificationskriterium
 from xls_management.ate.om.avw_vorganenger import AVWVorgaenger
 from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag

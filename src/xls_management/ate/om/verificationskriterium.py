@@ -3,7 +3,7 @@ import pandas as pd
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from xls_management.ate.om.testfaelle import TestCase
+    from xls_management.ate.om.test_case import TestCase
 from xls_management.utils.aux import list_from_comma_separated_str
 from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
 
