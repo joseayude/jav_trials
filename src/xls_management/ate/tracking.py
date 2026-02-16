@@ -6,6 +6,7 @@ from xls_management.ate.data import AVW_ATTRIBUTE_DE
 from xls_management.ate.project import project_combo_box
 from xls_management.tui.msgbox import msgbox
 from xls_management.config import ATEConfig
+from xls_management.utils.aux import list_from_comma_separated_str
 
 from importlib.metadata import version
 
@@ -787,7 +788,6 @@ class ATEStatus:
 #   
 #   Private Sub EinlesenTDVKs(ByVal wksTDVK As Worksheet, ByRef strTDVKAttribute() As String, ByRef rngTDVKAttribute() As Range)
     def read_TDVKs(self):
-        pass #TODO
 #       Dim anfIDs As String                            'String für eingelesene Anforderungs-IDs
 #       Dim verifikationKrit As Verifikationskriterium  'Klasse Verifikationskriterium
 #       Dim idList As Collection                        'Liste mit Anforderungs-IDs, die zu einem Verifikationskriterium eingelesen werden
@@ -797,59 +797,20 @@ class ATEStatus:
 #       'Verifikationskriterien einlesen
 #       'TDVKs: #1: ID, #2: Basierend auf der Anforderung, #3: Status, #4: Temp1_Text, #5: Aktion
 #       For lngZeile = 1 To wksTDVK.UsedRange.Rows.Count - rngTDVKAttribute(1).Row
+        for row in range(0, len(self.info_TDVK.columns)):
 #       '    If rngTDVKAttribute(3).Offset(lngZeile, 0).Value = "Fachlich abgestimmt" Then
+             if self.info_TDVK.columns['Status'][row] == 'Fachlich abgestimmt':
 #               'Neues Verifikationskriterium anlegen
 #               Set verifikationKrit = New Verifikationskriterium
-#               'ID des Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#               strVerifikationsID = Replace(Replace(rngTDVKAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-#               'ID des Verifikationsauftrags erfassen
-#               verifikationKrit.VK_ID = strVerifikationsID
-#               'Anforderungs-IDs einlesen
-#               anfIDs = rngTDVKAttribute(2).Offset(lngZeile, 0).Value
-#               'Anforderungs-IDs nach Kommas trennen
-#               Set idList = EinlesenGetrennteWerteKomma(anfIDs)
-#               'Alle mit dem aktuellen Verifikationskriterium verknüpften Anforderungs-IDs erfassen
-#               Set verifikationKrit.anf_ids = idList
-#               'Status des Verifikationskriteriums einlesen
-#               verifikationKrit.VK_status = rngTDVKAttribute(3).Offset(lngZeile, 0).Value
-#               'Absicherungsaufträge für dieses Verifikationskriterium anlegen
-#               Set verifikationKrit.Absicherungsauftraege = New Collection
-#               'Sammlung für Testfälle vorbereiten
-#               Set verifikationKrit.VK_Testfaelle = New Collection
-#               'Sammlung für I-Stufen vorbereiten
-#               Set verifikationKrit.anf_IStufen = New Collection
-#               'Sammlung für Umsetzer vorbereiten
-#               Set verifikationKrit.anf_Umsetzer = New Collection
-#               'Sammlung für BsM-Relevanz vorbereiten
-#               Set verifikationKrit.anf_BsMRelevanz = New Collection
-#               'Sammlung für ASIL vorbereiten
-#               Set verifikationKrit.anf_ASIL = New Collection
-#               'Sammlung für Feature vorbereiten
-#               Set verifikationKrit.anf_Feature = New Collection
-#               'Sammlung für Reifegrad vorbereiten
-#               Set verifikationKrit.anf_Reifegrad = New Collection
-#               'Sammlung für Modulverantwortliche vorbereiten
-#               Set verifikationKrit.anf_MV = New Collection
-#               'Sammlung für LAH-ID vorbereiten
-#               Set verifikationKrit.anf_LAHID = New Collection
-#               'Sammlung für LAH-Namen vorbereiten
-#               Set verifikationKrit.anf_LAHNamen = New Collection
-#               'Sammlung für Cluster Testing vorbereiten
-#               Set verifikationKrit.anf_ClusterTesting = New Collection
-#               'Sammlung für Anforderungsverantwortliche vorbereiten
-#               Set verifikationKrit.anf_Anforderungsverantwortliche = New Collection
-#               'Sammlung für Temp11_Auswahlfeld vorbereiten
-#               Set verifikationKrit.anf_Temp11_Auswahlfeld = New Collection
-#               'temp1_text einlesen
-#               verifikationKrit.VK_temp1Text = rngTDVKAttribute(4).Offset(lngZeile, 0).Value
-#               'Aktion einlesen
-#               verifikationKrit.VK_Aktion = rngTDVKAttribute(5).Offset(lngZeile, 0).Value
-#       
+                verification_criterion = Verificationskriterium(self.info_TDVK.columns, row)
+                # initialization moved to Verificationskriterium.__init__
 #               'Erfasstes Verifikationskriterium in globaler Verifikationskriterien-Liste hinzufügen
 #               verifikationKritList.Add Item:=verifikationKrit, Key:=verifikationKrit.VK_ID
+                self.verification_criterion_list[verification_criterion.vk_id] = verification_criterion
 #       '    End If
 #           'Fortschritt anzeigen
 #           If lngZeile Mod 100 = 0 Then
+                #TODO: Show progress
 #               Debug.Print "Verifikationskriterien einlesen: " & lngZeile & "/" & wksTDVK.UsedRange.Rows.Count - rngTDVKAttribute(1).Row
 #           End If
 #       Next lngZeile
@@ -1490,21 +1451,7 @@ class ATEStatus:
 #   End Sub
 #   
 #   Function EinlesenGetrennteWerteKomma(ByVal lahIDs As String) As Collection
-    def EinlesenGetrennteWerteKomma(self):
-        pass #TODO
-#       Dim idCollection As Collection
-#       Dim subStrings() As String
-#       Set idCollection = New Collection
-#       Dim newString As String
-#       Dim x As Integer
-#       
-#       newString = Replace(lahIDs, "?", "")
-#       subStrings = Split(newString, ",")
-#       For x = LBound(subStrings) To UBound(subStrings)
-#           idCollection.Add Trim(subStrings(x))
-#       Next
-#       Set EinlesenGetrennteWerteKomma = idCollection
-#       End Function
+    #Moved to utils as it could be used in multiple places.
 #       
 #       Private Function AusgabeSammlungLF(ByRef list As Collection) As String
 #       Dim strTemp As String

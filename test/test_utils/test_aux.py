@@ -1,4 +1,4 @@
-from xls_management.utils.aux import all_in_sequence
+from xls_management.utils.aux import all_in_sequence, list_from_comma_separated_str
 
 
 def test_all_in_sequence():
@@ -15,4 +15,13 @@ def test_all_in_sequence():
     
     assert all_in_sequence(a0, a2_0) is True
     assert all_in_sequence(a3_0, a0) is False
+
+def test_get_comma_separated_list():   
+    assert list_from_comma_separated_str('one, two, three') == ['one', 'two', 'three']
+    assert list_from_comma_separated_str(' one , two , three ') == ['one', 'two', 'three']
+    assert list_from_comma_separated_str('one,?two,three') == ['one', 'two', 'three']
+    assert list_from_comma_separated_str('one,\t?two ,th ree\n') == ['one', 'two', 'three']
+    assert list_from_comma_separated_str('one,\t\t\t\t?two ,th ree\n') == ['one', 'two', 'three']
+    #it works as well as a string method.
+    assert 'one,\t\t\t\t?two ,th ree\n, '.get_comma_separated_list() == ['one', 'two', 'three']
     
