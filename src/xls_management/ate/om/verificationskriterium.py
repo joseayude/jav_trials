@@ -3,7 +3,7 @@ import pandas as pd
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from xls_management.ate.om.testfaelle import Testfaelle
+    from xls_management.ate.om.testfaelle import TestCase
 from xls_management.utils.aux import list_from_comma_separated_str
 from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
 
@@ -54,7 +54,7 @@ class Verificationskriterium:
                 self.absicherungsauftraege:dict[str,Absicherungsauftrag] = {}
 #               'Sammlung für Testfälle vorbereiten
 #               Set verifikationKrit.VK_Testfaelle = New Collection
-                self.test_cases: dict[str, "Testfaelle"] = {}
+                self.test_cases: dict[str, "TestCase"] = {}
 #               'Sammlung für I-Stufen vorbereiten
 #               Set verifikationKrit.anf_IStufen = New Collection
                 self.anf_i_stufen = []  

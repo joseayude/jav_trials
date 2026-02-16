@@ -5,7 +5,7 @@ from xls_management.ate.om.verificationskriterium import Verificationskriterium
 from xls_management.utils.aux import list_from_comma_separated_str
 
 
-class Testfaelle:
+class TestCase:
 #Option Explicit
 #
 

@@ -1,7 +1,7 @@
 import re
 from xls_management.ate.om.db_info import DBInfo 
 from xls_management.ate.om.project_db_info import ProjectDBInfo
-from xls_management.ate.om.testfaelle import Testfaelle
+from xls_management.ate.om.testfaelle import TestCase
 from xls_management.ate.om.verificationskriterium  import Verificationskriterium
 from xls_management.ate.om.avw_vorganenger import AVWVorgaenger
 from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
@@ -166,7 +166,7 @@ class ATEStatus:
             self.read_TDAAs()
 #               'Testfälle
 #               Call EinlesenTFs(wksTF, strTFAttribute, rngTFAttribute)
-            self.read_TFs()
+            self.read_test_cases()
 #               'FRU-Timing
 #               Call EinlesenFRUTiming(wksFRUTiming, strFRUTimingAttribute, rngFRUTimingAttribute)
             self.read_FRU_timing()
@@ -872,7 +872,7 @@ class ATEStatus:
 #   End Sub
 #   
 #   Private Sub EinlesenTFs(ByVal wksTF As Worksheet, ByRef strTFAttribute() As String, ByRef rngTFAttribute() As Range)
-    def read_TFs(self):
+    def read_test_cases(self):
 #       Dim lngZeile As Long                            'Long-Zähler für aktuell einzulesende Zeile
 #       Dim testfall As Testfaelle                      'Klasse Testfaelle
 #       Dim anfIDs As String                            'String für eingelesene Anforderungs-IDs
@@ -890,7 +890,7 @@ class ATEStatus:
 #               'Neuen Testfall anlegen
                 # moved to Testfaelle.__init__
 #               Set testfall = New Testfaelle
-                test_case = Testfaelle(
+                test_case = TestCase(
                     self.info_TF.columns,
                     row,
                     self.verification_criteria,
