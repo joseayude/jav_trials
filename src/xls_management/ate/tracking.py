@@ -1,7 +1,9 @@
+import re
 from xls_management.ate.om.db_info import DBInfo 
 from xls_management.ate.om.project_db_info import ProjectDBInfo
 from xls_management.ate.om.verificationskriterium  import Verificationskriterium
 from xls_management.ate.om.avw_vorganenger import AVWVorgaenger
+from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
 from xls_management.ate.data import AVW_ATTRIBUTE_DE
 from xls_management.ate.project import project_combo_box
 from xls_management.tui.msgbox import msgbox
@@ -818,7 +820,7 @@ class ATEStatus:
 #   
 #   Private Sub EinlesenTDAAs(ByVal wksTDAA As Worksheet, ByRef strTDAAAttribute() As String, ByRef rngTDAAAttribute() As Range)
     def read_TDAAs(self):
-        pass #TODO
+        #Absicherungsauftrag (DE) == Security Order (EN)
 #       Dim anfIDs As String                            'String für eingelesene Anforderungs-IDs
 #       Dim absicherungsAuftr As Absicherungsauftraege  'Klasse Absicherungsauftraege
 #       Dim lngZeile As Long                            'Long-Zähler für aktuell einzulesende Zeile
@@ -827,9 +829,19 @@ class ATEStatus:
 #       'Absicherungsaufträge einlesen
 #       'TDAAs: #1: ID, #2: Enthalten in, #3: Status, #4: Testinstanz, #5: Testumgebungstyp
 #       For lngZeile = 1 To wksTDAA.UsedRange.Rows.Count - rngTDAAAttribute(1).Row
+        for row in range(0, len(self.info_TDAA.columns)):
 #           If rngTDAAAttribute(3).Offset(lngZeile, 0).Value = "Fachlich abgestimmt" Or rngTDAAAttribute(3).Offset(lngZeile, 0).Value = "In Review" Or rngTDAAAttribute(3).Offset(lngZeile, 0).Value = "In Bearbeitung" Then
+            if self.info_TDAA.columns['Status'][row] in ['Fachlich abgestimmt', 'In Review', 'In Bearbeitung']:
+                #  Security Order seems to be used only if the verification id is stored in self.verification_criterion_list,
+                #  so we can check this before creating the security order 
+                verification_criterion_id = str(self.info_TDAA.columns['Enthalten in'][row])
+                re.sub(r'[\?r]', '', verification_criterion_id)
+                verification_criterion = self.verification_criterion_list.get(verification_criterion_id, None)
+                if verification_criterion is not None:
 #               'Neuen Absicherungsauftrag anlegen
 #               Set absicherungsAuftr = New Absicherungsauftraege
+                    security_order:Absicherungsauftrag = Absicherungsauftrag(self.info_TDAA.columns, row)
+                    # initialization moved to Absicherungsauftrag.__init__
 #               'Testinstanz einlesen
 #               absicherungsAuftr.testinstanz = rngTDAAAttribute(4).Offset(lngZeile, 0).Value
 #               'Testumgebung einlesen
@@ -840,15 +852,18 @@ class ATEStatus:
 #               strVerifikationsID = Replace(Replace(rngTDAAAttribute(2).Offset(lngZeile, 0).Value, "?", ""), "r", "")
 #               'ID des Absicherungsauftrages einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #               absicherungsAuftr.abs_ID = Replace(Replace(rngTDAAAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-#               
+#                   
 #               'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
 #               Set Verifikationskriterium = New Verifikationskriterium
 #               Set Verifikationskriterium = FindeVK(verifikationKritList, strVerifikationsID)
 #               If Not Verifikationskriterium Is Nothing Then
 #                   Verifikationskriterium.Absicherungsauftraege.Add Item:=absicherungsAuftr, Key:=absicherungsAuftr.abs_ID
 #               End If
+                    verification_criterion.absicherungsauftraege[security_order.abs_id] = security_order
+                    self.verification_criterion_list[verification_criterion_id] = verification_criterion
 #           End If
 #           'Fortschritt anzeigen
+            ####TODO: Show progress
 #           If lngZeile Mod 100 = 0 Then
 #               Debug.Print "Absicherungsaufträge einlesen: " & lngZeile & "/" & wksTDAA.UsedRange.Rows.Count - rngTDAAAttribute(1).Row
 #           End If

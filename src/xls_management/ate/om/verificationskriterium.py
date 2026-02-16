@@ -1,6 +1,7 @@
 import pandas as pd
 
 from xls_management.utils.aux import list_from_comma_separated_str
+from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
 
 
 class Verificationskriterium:
@@ -46,6 +47,7 @@ class Verificationskriterium:
                 self.status = columns['Status'][row]
 #               'Absicherungsaufträge für dieses Verifikationskriterium anlegen
 #               Set verifikationKrit.Absicherungsauftraege = New Collection
+                self.absicherungsauftraege:dict[str,Absicherungsauftrag] = {}
 #               'Sammlung für Testfälle vorbereiten
 #               Set verifikationKrit.VK_Testfaelle = New Collection
                 self.test_cases = []
