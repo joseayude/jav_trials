@@ -1,5 +1,6 @@
 import re
 from xls_management.ate.om.db_info import DBInfo 
+from xls_management.ate.om.fru_timming import FRUTiming
 from xls_management.ate.om.project_db_info import ProjectDBInfo
 from xls_management.ate.om.test_case import TestCase
 from xls_management.ate.om.verificationskriterium  import Verificationskriterium
@@ -39,7 +40,7 @@ class ATEStatus:
         self.test_cases:dict = {}
 #       'Klasse FRU_Timing
 #       Public FRUTimingList As New Collection
-        self.timming_FRU_list:dict = {}
+        self.fru_timming_index:dict = {}
 #       'Klasse AVWVorgaenger
 #       Public AVWVorgaengerList As New Collection
         self.predecessor_list_AVW:dict = {}
@@ -910,7 +911,6 @@ class ATEStatus:
 #   
 #   Private Sub EinlesenFRUTiming(ByVal wksFRUTiming As Worksheet, ByRef strFRUTimingAttribute() As String, ByRef rngFRUTimingAttribute() As Range)
     def read_FRU_timing(self):
-        pass #TODO
 #       Dim lngZeile As Long                    'Long-Zähler für aktuell einzulesende Zeile
 #       Dim FRUTiming As FRUTiming              'Klasse FRUTiming
 #       Dim strFRUKey As String                 'Key für Item in FRUTiming
@@ -921,21 +921,17 @@ class ATEStatus:
 #       'FRU-Timing eonlesen
 #       'FRUTiming: #1: FeatureName, #2: RG, #3: Umsetzer, #4: Zuordnung zu I-Stufe
 #       For lngZeile = 1 To wksFRUTiming.UsedRange.Rows.Count - rngFRUTimingAttribute(1).Row
+        for row in range(0, len(self.info_fru_timming.columns)):
 #           If rngFRUTimingAttribute(4).Offset(lngZeile, 0).Value <> "" Then
+            if self.info_fru_timming.columns['FE_Meilenstein'][row] != "":
 #               'Neues FRUTiming anlegen
+                ### moved to FRUTiming.__init__
 #               Set FRUTiming = New FRUTiming
-#               'Feature einlesen
-#               FRUTiming.Feature = rngFRUTimingAttribute(1).Offset(lngZeile, 0).Value
-#               'Reifegrad einlesen
-#               FRUTiming.Reifegrad = rngFRUTimingAttribute(2).Offset(lngZeile, 0).Value
-#               'Umsetzer einlesen
-#               FRUTiming.Umsetzer = rngFRUTimingAttribute(3).Offset(lngZeile, 0).Value
-#               'I-Stufe einlesen
-#               FRUTiming.IStufe = rngFRUTimingAttribute(4).Offset(lngZeile, 0).Value
-#               'FRU-Key erzeugen
-#               strFRUKey = FRUTiming.Feature & FRUTiming.Reifegrad & FRUTiming.Umsetzer
-#               'Erfasstes FRU-Timing in globaler FRUTiming-Liste hinzufügen
-#               FRUTimingList.Add Item:=FRUTiming, Key:=strFRUKey
+                fru_timing = FRUTiming(
+                    self.info_fru_timming.columns,
+                    row,
+                    self.fru_timming_index
+                )
 #           End If
 #           'Fortschritt anzeigen
 #           If lngZeile Mod 100 = 0 Then
