@@ -85,10 +85,10 @@ This document maps the VBA procedures/subs from the `ate_status_sequence.puml` f
   - Enhance with write helpers if the ATE output needs structured writing (e.g., `write_sheet_from_df()`), and context manager support for open/save/close.
 
 ## Control-flow mapping (high-level)
-1. UI selection via `project_combo_box()` → returns `(project, use_predecesor_ids)`
+1. UI selection via `project_combo_box()` → returns `(project, use_predecessor_ids)`
 2. `ATEStatus.perform_status()` calls `initialized()` → prepares `DBInfo/ProjectDBInfo` instances (attribute discovery), sets up `Workbook` for BsM
 3. If initialization succeeds: call readers in order (`read_blacklist`, `read_TDVKs`, `read_TDAAs`, `read_TFs`, `read_FRU_timing`)
-4. Branch on `use_predecesor_ids`:
+4. Branch on `use_predecessor_ids`:
    - False: `read_raw_data_AVW()`
    - True: `read_predecesor_raw_data_AVW()` then `read_successor_raw_data_AVW()`
 5. Call outputs: `output_status()`, `output_status_TD()`, `close_workbooks()`

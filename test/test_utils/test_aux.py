@@ -22,6 +22,4 @@ def test_get_comma_separated_list():
     assert list_from_comma_separated_str('one,?two,three') == ['one', 'two', 'three']
     assert list_from_comma_separated_str('one,\t?two ,th ree\n') == ['one', 'two', 'three']
     assert list_from_comma_separated_str('one,\t\t\t\t?two ,th ree\n') == ['one', 'two', 'three']
-    #it works as well as a string method.
-    assert 'one,\t\t\t\t?two ,th ree\n, '.get_comma_separated_list() == ['one', 'two', 'three']
     

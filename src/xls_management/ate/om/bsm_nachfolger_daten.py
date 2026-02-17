@@ -1,0 +1,44 @@
+import pandas as pd
+from xls_management.ate.om.avw_vorganenger import AVWVorgaenger
+from xls_management.ate.om.bsm_daten import BSMDaten
+from xls_management.ate.om.fru_timming import FRUTiming
+from xls_management.ate.om.verificationskriterium import Verificationskriterium
+
+
+class BSMNachfolgerDaten(BSMDaten):
+    def __init__(
+        self,
+        columns:pd.DataFrame,
+        row:int,
+        fru_timing_index: dict[str,FRUTiming],
+        use_predecessor_ids:bool,
+        predecessor_index:dict[str,AVWVorgaenger ],
+        is_specific: bool = False,
+    ):
+        super().__init__(columns, row, fru_timing_index, is_specific)
+        if use_predecessor_ids:
+            self.avw_vorganger_id = str(columns['ID der Vorgänger-Anforderung'][row])
+#           'Kommentar Redaktionskreis und temp1_Text aus AVW-Vorgänger einlesen
+#           Set AVWVorgaenger = New AVWVorgaenger
+#           Set AVWVorgaenger = FindeAVWVorgaenger(AVWVorgaengerList, BSMDatensatz.AVWVorgaengerID)
+            requirement_predecessor = self.predecessor_index.get(self.avw_vorganger_id, None)
+#           If Not AVWVorgaenger Is Nothing Then
+            if requirement_predecessor is not None:
+#               If AVWVorgaenger.AbgelehntNichtTestbar = "x" Then
+                if requirement_predecessor.abgelehnt_nicht_testbar == 'x':
+#                   If BSMDatensatz.AVWAbgelehntNichtTestbar = "" Then
+                    if self.avw_abgelehnt_nicht_testbar == '':
+#                       BSMDatensatz.AVWAbgelehntNichtTestbar = "x (Master)"
+                        self.avw_abgelehnt_nicht_testbar = 'x (Master)'
+#                   Else
+                    else:
+#                       BSMDatensatz.AVWAbgelehntNichtTestbar = BSMDatensatz.AVWAbgelehntNichtTestbar & vbCrLf & "x (Master)"
+                        self.avw_abgelehnt_nicht_testbar = f'{self.avw_abgelehnt_nicht_testbar}\nx (Master)'   
+#                   End If
+#               End If
+#           End If
+        else:
+            self.avw_vorganger_id = None
+
+    def same_id(self, requirement_id:id) -> bool:
+        return requirement_id == self.avw_vorganger_id

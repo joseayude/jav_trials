@@ -1,4 +1,6 @@
 import re
+from xls_management.ate.om.bsm_daten import BSMDaten
+from xls_management.ate.om.bsm_nachfolger_daten import BSMNachfolgerDaten
 from xls_management.ate.om.db_info import DBInfo 
 from xls_management.ate.om.fru_timming import FRUTiming
 from xls_management.ate.om.project_db_info import ProjectDBInfo
@@ -27,7 +29,7 @@ class ATEStatus:
         self,
     ) -> None:
         self.config=ATEConfig()
-        self.predecessor_id_is_used = False
+        self.use_predecessor_ids = False
         self.project = None
 #       'Klasse Verifikationskriterien mit Absicherungsaufträgen
 #       Public verifikationKritList As New Collection
@@ -43,10 +45,10 @@ class ATEStatus:
         self.fru_timming_index:dict = {}
 #       'Klasse AVWVorgaenger
 #       Public AVWVorgaengerList As New Collection
-        self.predecessor_list_AVW:dict = {}
+        self.predecessor_index_AVW:dict = {}
 #       'Flag für die Berücksichtigung von Vorgänger-IDs bei den AVW-Rohdaten
 #       Public blnAVWVorgaengerIDsVerwenden As Boolean
-        self.vorgaenger_ids_verwenden_AVW:bool
+        self.use_predecessor_ids:bool
 #       'BsM_Status
 #       Dim wbBsM As Workbook                       'Workbook für BsM_Status
 #       Dim wksBsM As Worksheet                     'Worksheet für BsM_Status
@@ -136,7 +138,7 @@ class ATEStatus:
 #       'Abfrage Projekt und Nutzung Master-Bereich
 #       BoxAuswahlProjekt.Caption = "ATE-Status " & strVersionMakro
 #       BoxAuswahlProjekt.Show
-        self.project, self.use_predecesor_ids = project_combo_box()
+        self.project, self.use_predecessor_ids = project_combo_box()
 #       
 #       If boolAuswahlGetroffen Then
 #           'Eingabe Projekt
@@ -177,16 +179,16 @@ class ATEStatus:
 #                   'Anforderungsstatistik Projekt
 #                   Call EinlesenAVWRohdaten(wksAVW, strAVWAttribute, rngAVWAttribute, strLAHBlacklist, strProjekt, strAVWAttributeMEB21, rngAVWAttributeMEB21)
 #               Else
-            if self.use_predecesor_ids:
+            if self.use_predecessor_ids:
 #                   'Anforderungsstatistik Masterbereich
 #                   Call EinlesenAVWVorgaengerRohdaten(wksAVWMaster, strAVWMasterAttribute, rngAVWMasterAttribute)
-                self.read_predecesor_raw_data_AVW()
+                self.read_predecessor_requirement_raw_data()
 #                   'Anforderungsstatistik Projekt
 #                   Call EinlesenAVWNachfolgerRohdaten(wksAVW, strAVWAttribute, rngAVWAttribute, strLAHBlacklist, strProjekt, strAVWAttributeMEB21, rngAVWAttributeMEB21)
-                self.read_successor_raw_data_AVW()
+                self.read_successor_requirement_raw_data()
 #               End If
             else:
-                self.read_raw_data_AVW()
+                self.read_requirement_raw_data()
 #               'Ausgabe ATE-Status
 #               Call AusgabeATEStatus(wbBsM, wksBsM, strBsMAttribute, rngBsMAttribute, strWeitereTUsAusgabe, strDateinamen, strProjekt)
             self.output_status()
@@ -318,7 +320,7 @@ class ATEStatus:
 #       If blnAVWVorgaengerIDsVerwenden Then
 #           strAVWAttribute(23) = "Abgezweigt aus"  'strAVWAttribute(22) = "Abgezweigt aus"
 #       End If
-        if self.predecessor_id_is_used:
+        if self.use_predecessor_ids:
             self.info_AVW = DBInfo(attributes=AVW_ATTRIBUTE_DE)
         else:
             self.info_AVW = DBInfo(attributes=AVW_ATTRIBUTE_DE[:-1])
@@ -584,7 +586,7 @@ class ATEStatus:
 #       End If
 #       
 #       If blnAVWVorgaengerIDsVerwenden = True Then
-        if self.predecessor_id_is_used:
+        if self.use_predecessor_ids:
 #           If blnImportAttribute(5) = True Then
             if self.import_attribute[4]:
 #               'Arbeitsblatt AVWMaster_Rohdaten
@@ -596,7 +598,7 @@ class ATEStatus:
 #               strAVWMasterAttribute(2) = "temp1_Text"
 #               strAVWMasterAttribute(3) = "Kommentar Redaktionskreis"
                 self.info_AVW_master = DBInfo(
-                path=self.config.get('default_path', '.'),
+                    path=self.config.get('default_path', '.'),
                     attributes = (
                         "ID",
                         "temp1_Text",
@@ -645,7 +647,7 @@ class ATEStatus:
 #           End If
 #       End If
         
-        return all(self.import_attribute[:-1]) and (not self.predecessor_id_is_used or self.import_attribute[5])
+        return all(self.import_attribute[:-1]) and (not self.use_predecessor_ids or self.import_attribute[5])
 #   End Function
 
 #
@@ -940,10 +942,53 @@ class ATEStatus:
 #       Next lngZeile
 #   End Sub
 #   
+    def assign_verification_criterion(self, bsm_dataset:BSMDaten) -> None:
+#       blnVKZugeordnet = False
+#       For Each varErfassteVKItem In verifikationKritList
+        for verification_criterion in self.verification_criteria.values():
+#           'Abgleich über Element-ID
+#           For Each varVKAnfID In varErfassteVKItem.anf_ids
+            for requirement_id in verification_criterion.anf_ids:
+#               If varVKAnfID = BSMDatensatz.AVWID Then
+                if  bsm_dataset.same_id(requirement_id):
+#                   'Zugehörigkeit des Verifikationskriteriums zu aktuellen Anforderungen kennzeichnen
+#                   varErfassteVKItem.AnforderungVorhanden = True
+                    verification_criterion.requirement_present = True
+#                   'Verifikationskriterium dem aktuellen AVW-Datensatz zuordnen
+#                   bsm_dataset.add_verification_criterion(verification_criterion)
+                    ### moved to BSMDaten.add_verification_criterion()
+#                   blnVKZugeordnet = True
+#                   Exit For
+                    return
+#               End If
+#           Next varVKAnfID
+#           'Äußere Schleife beenden, da es zu jeder Anforderung nur ein Verifikationskriterium gibt
+#           If blnVKZugeordnet Then Exit For
+#       Next varErfassteVKItem
+
+    def assign_test_cases(self, bsm_dataset:BSMDaten) -> None:
+#       blnTFZugeordnet = False
+        test_case_assigned = False
+#       For Each varErfassteTFItem In testfallList
+        for test_case in self.test_cases.values():
+#           'Abgleich über Element-ID
+#           For Each varTFAnfID In varErfassteTFItem.TF_anfIDs
+            for requirement_id in test_case.anf_ids:
+#               If varTFAnfID = BSMDatensatz.AVWID Then
+                if bsm_dataset.same_id(requirement_id):
+#                   BSMDatensatz.Testfaelle.Add Item:=varErfassteTFItem
+                    bsm_dataset.add_test_case(test_case)
+#                   blnTFZugeordnet = True
+                    test_case_assigned = True
+#                   Exit For
+                    break
+#               End If
+#           Next varTFAnfID
+#       Next varErfassteTFItem
+
 #   Private Sub EinlesenAVWRohdaten(ByVal wksAVW As Worksheet, ByRef strAVWAttribute() As String, ByRef rngAVWAttribute() As Range, ByRef strLAHBlacklist() As String, _
 #                                   ByVal strProjekt As String, ByRef strAVWAttributeMEB21() As String, ByRef rngAVWAttributeMEB21() As Range)
-    def read_raw_data_AVW(self):
-        pass #TODO
+    def read_requirement_raw_data(self):
 #       Dim lngZeile As Long                    'Long-Variable für aktuell einzulesende Zeile
 #       Dim BSMDatensatz As BSMDaten            'Klasse BSMDaten
 #       Dim strBsMRelevanz As String            'String-Variable für Zusammenfassung der BsM-Relevanz
@@ -968,194 +1013,64 @@ class ATEStatus:
 #       '#11: BSM-SaFuSi Bewertung, #12: BSM-ZZ Bewertung, #13: BSM-ED Bewertung, #14: BSM-FFF Bewertung, #15: BSM-O Bewertung, #16: BSM-Se Bewertung, #17: MV
 #       '#18: Cluster Testing, #19: Dokument, #20: Kommentar Redaktionskreis, #21: temp1_Text
 #       For lngZeile = 1 To wksAVW.UsedRange.Rows.Count - rngAVWAttribute(1).Row
+        for row in range(0, len(self.info_AVW.columns)):
 #           'Nur Datensätze bei vorhandener Anforderungs-ID übernehmen
 #           If rngAVWAttribute(1).Offset(lngZeile, 0).Value <> "" Then
+            if str(self.info_AVW.columns['ID'][row]) != "":
 #               'Nur LAH aufnehmen, die nicht auf der Blacklist stehen
 #               If AuswertungLAHBlacklist(strLAHBlacklist, rngAVWAttribute(19).Offset(lngZeile, 0).Value) Then
+                if str(self.info_AVW.columns['Dokument'][row]) not in self.blacklist_LAHB:
 #                   'Nur Fachlich abgestimmte (AVW) oder gültige (DOORS) Anforderungen aufnehmen
+                    #Only include requirements that are either 
+                    # "Fachlich abgestimmt" -- Technically agreed requirements ;or 
+                    # "gültig"              -- valid DOORS requirements. 
+                    # The status is stored in column 6, which is accessed via self.info_AVW.columns['Status'][row]
 #           '        If rngAVWAttribute(6).Offset(lngZeile, 0).Value = "Fachlich abgestimmt" Or rngAVWAttribute(6).Offset(lngZeile, 0).Value = "gültig" Then
+                    if self.info_AVW.columns['Status'][row] in ['Fachlich abgestimmt', 'gültig']:
 #                       'Attribut Cluster Testing => nicht relevant soll ignoriert werden
+                        # Testing cluster attribute => "nich relevant" not relevant should be ignored
 #           '            If rngAVWAttribute(18).Offset(lngZeile, 0).Value <> "nicht relevant" Then
+                        if str(self.info_AVW.columns['Cluster Testing'][row]) != "nicht relevant":
 #                           'Neuen AVW-Datensatz anlegen
+                            #Create new VW requirement dataset
 #                           Set BSMDatensatz = New BSMDaten
-#                           'Neues Verifikationskriterium anlegen
-#                           Set BSMDatensatz.Verifikationskriterium = New Collection
-#                           'Neuen Testfall anlegen
-#                           Set BSMDatensatz.Testfaelle = New Collection
-#                           'Feature einlesen
-#                           BSMDatensatz.AVWFeature = CStr(rngAVWAttribute(7).Offset(lngZeile, 0).Value)
-#                           'Reifegrad einlesen
-#                           BSMDatensatz.AVWReifegrad = CStr(rngAVWAttribute(8).Offset(lngZeile, 0).Value)
-#                           'Umsetzer einlesen
-#                           BSMDatensatz.AVWUmsetzer = CStr(rngAVWAttribute(9).Offset(lngZeile, 0).Value)
-#                           'Dokument-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#                           BSMDatensatz.AVWDokumentID = Replace(Replace(CStr(rngAVWAttribute(2).Offset(lngZeile, 0).Value), "?", ""), "r", "")
-#                           'Dokument-Name einlesen
-#                           BSMDatensatz.AVWDokumentName = CStr(rngAVWAttribute(19).Offset(lngZeile, 0).Value)
-#                           'Modulverantwortlichen einlesen
-#                           BSMDatensatz.AVWMV = CStr(rngAVWAttribute(17).Offset(lngZeile, 0).Value)
-#                           'Anforderungs-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#                           BSMDatensatz.AVWID = Replace(Replace(CStr(rngAVWAttribute(1).Offset(lngZeile, 0).Value), "?", ""), "r", "")
-#                           'Status einlesen
-#                           BSMDatensatz.AVWStatus = CStr(rngAVWAttribute(6).Offset(lngZeile, 0).Value)
-#                           'Typ einlesen
-#                           BSMDatensatz.AVWTyp = CStr(rngAVWAttribute(4).Offset(lngZeile, 0).Value)
-#                           'Kategorie einlesen
-#                           BSMDatensatz.AVWKategorie = CStr(rngAVWAttribute(5).Offset(lngZeile, 0).Value)
-#                           'BsM-Status einlesen
-#                           BSMDatensatz.AVWBsMSaFuSi = CStr(rngAVWAttribute(11).Offset(lngZeile, 0).Value)
-#                           BSMDatensatz.AVWBsMZZ = CStr(rngAVWAttribute(12).Offset(lngZeile, 0).Value)
-#                           BSMDatensatz.AVWBsMED = CStr(rngAVWAttribute(13).Offset(lngZeile, 0).Value)
-#                           BSMDatensatz.AVWBsMFFF = CStr(rngAVWAttribute(14).Offset(lngZeile, 0).Value)
-#                           BSMDatensatz.AVWBsMO = CStr(rngAVWAttribute(15).Offset(lngZeile, 0).Value)
-#                           BSMDatensatz.AVWBsMSe = CStr(rngAVWAttribute(16).Offset(lngZeile, 0).Value)
+                            bsm_dataset = BSMDaten(
+                                self.info_AVW.columns,
+                                row,
+                                self.fru_timming_index,
+                                is_specific = self.project in ['MEB21', 'MQB48W'],
+                            )
+                            ### Moved to BSMDaten.__init__
 #                           'Zusammenführung BsM-Relevanz
-#                           strBsMRelevanz = ""
-#                           If CStr(BSMDatensatz.AVWBsMSaFuSi) = strBsMVorhanden Then
-#                               strBsMRelevanz = "BsM-SaFuSi"
-#                           End If
-#                           If CStr(BSMDatensatz.AVWBsMZZ) = strBsMVorhanden Then
-#                               If strBsMRelevanz = "" Then strBsMRelevanz = "BsM-ZZ" Else strBsMRelevanz = strBsMRelevanz & ",BsM-ZZ"
-#                           End If
-#                           If CStr(BSMDatensatz.AVWBsMED) = strBsMVorhanden Then
-#                               If strBsMRelevanz = "" Then strBsMRelevanz = "BsM-ED" Else strBsMRelevanz = strBsMRelevanz & ",BsM-ED"
-#                           End If
-#                           If CStr(BSMDatensatz.AVWBsMFFF) = strBsMVorhanden Then
-#                               If strBsMRelevanz = "" Then strBsMRelevanz = "BsM-FFF" Else strBsMRelevanz = strBsMRelevanz & ",BsM-FFF"
-#                           End If
-#                           If CStr(BSMDatensatz.AVWBsMO) = strBsMVorhanden Then
-#                               If strBsMRelevanz = "" Then strBsMRelevanz = "BsM-O" Else strBsMRelevanz = strBsMRelevanz & ",BsM-O"
-#                           End If
-#                           If CStr(BSMDatensatz.AVWBsMSe) = strBsMVorhanden Then
-#                               If strBsMRelevanz = "" Then strBsMRelevanz = "BsM-Se" Else strBsMRelevanz = strBsMRelevanz & ",BsM-Se"
-#                           End If
-#                           BSMDatensatz.BSMRelevanz = strBsMRelevanz
+                            bsm_dataset.set_relevance()
+                            ### refactored as BSMDaten.set_relevance()
+                            ### called from BSMDaten.__init__
 #                           'ASIL einlesen
-#                           BSMDatensatz.AVWASIL = CStr(rngAVWAttribute(10).Offset(lngZeile, 0).Value)
-#                           'Kommentar Redaktionskreis und temp1_Text einlesen
-#                           If InStr(CStr(UCase(rngAVWAttribute(20).Offset(lngZeile, 0).Value)), "#ABGELEHNT_NICHT_TESTBAR") > 0 Or InStr(CStr(UCase(rngAVWAttribute(21).Offset(lngZeile, 0).Value)), "#ABGELEHNT_NICHT_TESTBAR") > 0 Then
-#                               BSMDatensatz.AVWAbgelehntNichtTestbar = "x"
-#                           End If
+                            ### Moved to BSMDaten.__init__
 #                           
 #                           'Geplante I-Stufe einlesen
-#                           strIStufe = ""
-#                           strIStufeMin = ""
-#                           If BSMDatensatz.AVWUmsetzer <> "" Then
-#                               varUmsetzer = Split(BSMDatensatz.AVWUmsetzer, ",", , vbBinaryCompare)
-#                               For intUmsetzer = 0 To UBound(varUmsetzer, 1)
-#                                   strIStufe = FRUTimingList.Item(BSMDatensatz.AVWFeature & BSMDatensatz.AVWReifegrad & Trim(varUmsetzer(intUmsetzer))).IStufe
-#                                   If strIStufeMin = "" Then
-#                                       strIStufeMin = strIStufe
-#                                   ElseIf InStr(strIStufe, "IS") > 0 Then
-#                                       If strIStufe < strIStufeMin Then
-#                                           strIStufeMin = strIStufe
-#                                       End If
-#                                   End If
-#                               Next intUmsetzer
-#                           End If
-#                           BSMDatensatz.IStufe = strIStufeMin
+                            ### refactored as BSMDaten.get_IStufe()
+                            ### called from BSMDaten.__init__
 #                           
-#                           'Cluster Testing einlesen
-#                           BSMDatensatz.ClusterTesting = CStr(rngAVWAttribute(18).Offset(lngZeile, 0).Value)
-#                           
-#                           'Anforderungsverantwortliche einlesen
-#                           BSMDatensatz.AVWAnforderungsverantwortliche = CStr(rngAVWAttribute(22).Offset(lngZeile, 0).Value)
-#                           
-#                           'Projekt MEB21 - Temp11_Auswahlfeld einlesen
-#                           If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
-#                               BSMDatensatz.AVWTemp11_Auswahlfeld = CStr(rngAVWAttributeMEB21(1).Offset(lngZeile, 0).Value)
-#                           End If
+                            ### Moved to BSMDaten.__init__
 #                           
 #                           'Verifikationskriterium zuordnen
 #                           'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
-#                           blnVKZugeordnet = False
-#                           For Each varErfassteVKItem In verifikationKritList
-#                               'Abgleich über Element-ID
-#                               For Each varVKAnfID In varErfassteVKItem.anf_ids
-#                                   If varVKAnfID = BSMDatensatz.AVWID Then
-#                                       'Zugehörigkeit des Verifikationskriteriums zu aktuellen Anforderungen kennzeichnen
-#                                       varErfassteVKItem.AnforderungVorhanden = True
-#                                       'VK-ID aufnehmen
-#                                       BSMDatensatz.Verifikationskriterium.Add Item:=varErfassteVKItem
-#                                       'Geplante I-Stufe für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.IStufe <> "" Then
-#                                           varErfassteVKItem.anf_IStufen.Add Item:=BSMDatensatz.IStufe
-#                                       End If
-#                                       'Umsetzer für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWUmsetzer <> "" Then
-#                                           varErfassteVKItem.anf_Umsetzer.Add Item:=BSMDatensatz.AVWUmsetzer
-#                                       End If
-#                                       'BsM-Relevanz für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.BSMRelevanz <> "" Then
-#                                           varErfassteVKItem.anf_BsMRelevanz.Add Item:=BSMDatensatz.BSMRelevanz
-#                                       End If
-#                                       'ASIL für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWASIL <> "" Then
-#                                           varErfassteVKItem.anf_ASIL.Add Item:=BSMDatensatz.AVWASIL
-#                                       End If
-#                                       'Feature für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWFeature <> "" Then
-#                                           varErfassteVKItem.anf_Feature.Add Item:=BSMDatensatz.AVWFeature
-#                                       End If
-#                                       'Reifegrad für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWReifegrad <> "" Then
-#                                           varErfassteVKItem.anf_Reifegrad.Add Item:=BSMDatensatz.AVWReifegrad
-#                                       End If
-#                                       'Modulverantwortliche für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWMV <> "" Then
-#                                           varErfassteVKItem.anf_MV.Add Item:=BSMDatensatz.AVWMV
-#                                       End If
-#                                       'LAH-ID für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWDokumentID <> "" Then
-#                                           varErfassteVKItem.anf_LAHID.Add Item:=BSMDatensatz.AVWDokumentID
-#                                       End If
-#                                       'LAH-Namen für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWDokumentName <> "" Then
-#                                           varErfassteVKItem.addLAHName (BSMDatensatz.AVWDokumentName)
-#                                       End If
-#                                       'Cluster Testing für Verifikationskriterium erfassen
-#                                       If BSMDatensatz.ClusterTesting <> "" Then
-#                                           varErfassteVKItem.anf_ClusterTesting.Add Item:=BSMDatensatz.ClusterTesting
-#                                       End If
-#                                       'Anforderungsverantwortliche für Verifikationskriterium erfassen
-#                                       If BSMDatensatz.AVWAnforderungsverantwortliche <> "" Then
-#                                           varErfassteVKItem.anf_Anforderungsverantwortliche.Add Item:=BSMDatensatz.AVWAnforderungsverantwortliche
-#                                       End If
-#                                       'Temp11_Auswahlfeld für Verifikationskriterium erfassen
-#                                       If BSMDatensatz.AVWTemp11_Auswahlfeld <> "" Then
-#                                           varErfassteVKItem.anf_Temp11_Auswahlfeld.Add Item:=BSMDatensatz.AVWTemp11_Auswahlfeld
-#                                       End If
-#                                       
-#                                       'Innere Schleife beenden, da es zu jeder Anforderung nur ein Verifikationskriterium gibt
-#                                       blnVKZugeordnet = True
-#                                       Exit For
-#                                   End If
-#                               Next varVKAnfID
-#                               'Äußere Schleife beenden, da es zu jeder Anforderung nur ein Verifikationskriterium gibt
-#                               If blnVKZugeordnet Then Exit For
-#                           Next varErfassteVKItem
+                            self.assign_verification_criterion(bsm_dataset)
 #                           
 #                           'Testfall zuordnen
-#                           blnTFZugeordnet = False
-#                           For Each varErfassteTFItem In testfallList
-#                               'Abgleich über Element-ID
-#                               For Each varTFAnfID In varErfassteTFItem.TF_anfIDs
-#                                   If varTFAnfID = BSMDatensatz.AVWID Then
-#                                       BSMDatensatz.Testfaelle.Add Item:=varErfassteTFItem
-#                                       blnTFZugeordnet = True
-#                                       Exit For
-#                                   End If
-#                               Next varTFAnfID
-#                           Next varErfassteTFItem
+                            self.assign_test_case(bsm_dataset)
 #                           
 #                           'Erfasste AVW-Rohdaten in globaler AVW-Rohdaten-Liste hinzufügen
 #                           BsMDatenList.Add Item:=BSMDatensatz, Key:=BSMDatensatz.AVWID
+                            self.bsm_datasets[bsm_dataset.avw_id] = bsm_dataset
 #           '            End If
 #           '        End If
 #               End If
 #           End If
 #       
 #           'Fortschritt anzeigen
+            #TODO: Show progress
 #           If lngZeile Mod 100 = 0 Then
 #               Debug.Print "Anforderungen einlesen: " & lngZeile & "/" & wksAVW.UsedRange.Rows.Count - rngAVWAttribute(1).Row
 #           End If
@@ -1164,7 +1079,7 @@ class ATEStatus:
 #   
 #   Private Sub EinlesenAVWNachfolgerRohdaten(ByVal wksAVW As Worksheet, ByRef strAVWAttribute() As String, ByRef rngAVWAttribute() As Range, ByRef strLAHBlacklist() As String, _
 #                                             ByVal strProjekt As String, ByRef strAVWAttributMEB21() As String, ByRef rngAVWAttributMEB21() As Range)
-    def read_successor_raw_data_AVW(self):
+    def read_successor_requirement_raw_data(self):
         pass #TODO
 #       Dim lngZeile As Long                    'Long-Variable für aktuell einzulesende Zeile
 #       Dim BSMDatensatz As BSMDaten            'Klasse BSMDaten
@@ -1191,213 +1106,60 @@ class ATEStatus:
 #       '#11: BSM-SaFuSi Bewertung, #12: BSM-ZZ Bewertung, #13: BSM-ED Bewertung, #14: BSM-FFF Bewertung, #15: BSM-O Bewertung, #16: BSM-Se Bewertung, #17: MV
 #       '#18: Cluster Testing, #19: Dokument, #20: Kommentar Redaktionskreis, #21: temp1_Text, #22: ID der Vorgänger-Anforderung
 #       For lngZeile = 1 To wksAVW.UsedRange.Rows.Count - rngAVWAttribute(1).Row
+        for row in range(0, len(self.info_AVW.columns)):
 #           'Nur Datensätze bei vorhandener Anforderungs-ID übernehmen
 #           If rngAVWAttribute(1).Offset(lngZeile, 0).Value <> "" Then
+            if str(self.info_AVW.columns['ID'][row]) != "":
 #               'Nur LAH aufnehmen, die nicht auf der Blacklist stehen
 #               If AuswertungLAHBlacklist(strLAHBlacklist, rngAVWAttribute(19).Offset(lngZeile, 0).Value) Then
+                if str(self.info_AVW.columns['Dokument'][row]) not in self.blacklist_LAHB:
 #                   'Nur Fachlich abgestimmte (AVW) oder gültige (DOORS) Anforderungen aufnehmen
 #           '        If rngAVWAttribute(6).Offset(lngZeile, 0).Value = "Fachlich abgestimmt" Or rngAVWAttribute(6).Offset(lngZeile, 0).Value = "gültig" Then
+                    if self.info_AVW.columns['Status'][row] in ['Fachlich abgestimmt', 'gültig']:
 #                       'Attribut Cluster Testing => nicht relevant soll ignoriert werden
 #           '            If rngAVWAttribute(18).Offset(lngZeile, 0).Value <> "nicht relevant" Then
+                        if str(self.info_AVW.columns['Cluster Testing'][row]) != "nicht relevant":
 #                           'Neuen AVW-Datensatz anlegen
 #                           Set BSMDatensatz = New BSMDaten
-#                           'Neues Verifikationskriterium anlegen
-#                           Set BSMDatensatz.Verifikationskriterium = New Collection
-#                           'Neuen Testfall anlegen
-#                           Set BSMDatensatz.Testfaelle = New Collection
-#                           'Feature einlesen
-#                           BSMDatensatz.AVWFeature = CStr(rngAVWAttribute(7).Offset(lngZeile, 0).Value)
-#                           'Reifegrad einlesen
-#                           BSMDatensatz.AVWReifegrad = CStr(rngAVWAttribute(8).Offset(lngZeile, 0).Value)
-#                           'Umsetzer einlesen
-#                           BSMDatensatz.AVWUmsetzer = CStr(rngAVWAttribute(9).Offset(lngZeile, 0).Value)
-#                           'Dokument-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#                           BSMDatensatz.AVWDokumentID = Replace(Replace(CStr(rngAVWAttribute(2).Offset(lngZeile, 0).Value), "?", ""), "r", "")
-#                           'Dokument-Name einlesen
-#                           BSMDatensatz.AVWDokumentName = CStr(rngAVWAttribute(19).Offset(lngZeile, 0).Value)
-#                           'Modulverantwortlichen einlesen
-#                           BSMDatensatz.AVWMV = CStr(rngAVWAttribute(17).Offset(lngZeile, 0).Value)
-#                           'Anforderungs-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#                           BSMDatensatz.AVWID = Replace(Replace(CStr(rngAVWAttribute(1).Offset(lngZeile, 0).Value), "?", ""), "r", "")
-#                           'Status einlesen
-#                           BSMDatensatz.AVWStatus = CStr(rngAVWAttribute(6).Offset(lngZeile, 0).Value)
-#                           'Typ einlesen
-#                           BSMDatensatz.AVWTyp = CStr(rngAVWAttribute(4).Offset(lngZeile, 0).Value)
-#                           'Kategorie einlesen
-#                           BSMDatensatz.AVWKategorie = CStr(rngAVWAttribute(5).Offset(lngZeile, 0).Value)
-#                           'BsM-Status einlesen
-#                           BSMDatensatz.AVWBsMSaFuSi = CStr(rngAVWAttribute(11).Offset(lngZeile, 0).Value)
-#                           BSMDatensatz.AVWBsMZZ = CStr(rngAVWAttribute(12).Offset(lngZeile, 0).Value)
-#                           BSMDatensatz.AVWBsMED = CStr(rngAVWAttribute(13).Offset(lngZeile, 0).Value)
-#                           BSMDatensatz.AVWBsMFFF = CStr(rngAVWAttribute(14).Offset(lngZeile, 0).Value)
-#                           BSMDatensatz.AVWBsMO = CStr(rngAVWAttribute(15).Offset(lngZeile, 0).Value)
-#                           BSMDatensatz.AVWBsMSe = CStr(rngAVWAttribute(16).Offset(lngZeile, 0).Value)
+                            bsm_dataset = BSMNachfolgerDaten(
+                                self.info_AVW.columns,
+                                row,
+                                self.fru_timming_index,
+                                self.use_predecessor_ids,
+                                self.predecessor_index_AVW,
+                                is_specific = self.project in ['MEB21', 'MQB48W'],
+                            )
+                            ### Moved to BSMNachfolgerDaten.__init__
 #                           'Zusammenführung BsM-Relevanz
-#                           strBsMRelevanz = ""
-#                           If CStr(BSMDatensatz.AVWBsMSaFuSi) = strBsMVorhanden Then
-#                               strBsMRelevanz = "BsM-SaFuSi"
-#                           End If
-#                           If CStr(BSMDatensatz.AVWBsMZZ) = strBsMVorhanden Then
-#                               If strBsMRelevanz = "" Then strBsMRelevanz = "BsM-ZZ" Else strBsMRelevanz = strBsMRelevanz & ",BsM-ZZ"
-#                           End If
-#                           If CStr(BSMDatensatz.AVWBsMED) = strBsMVorhanden Then
-#                               If strBsMRelevanz = "" Then strBsMRelevanz = "BsM-ED" Else strBsMRelevanz = strBsMRelevanz & ",BsM-ED"
-#                           End If
-#                           If CStr(BSMDatensatz.AVWBsMFFF) = strBsMVorhanden Then
-#                               If strBsMRelevanz = "" Then strBsMRelevanz = "BsM-FFF" Else strBsMRelevanz = strBsMRelevanz & ",BsM-FFF"
-#                           End If
-#                           If CStr(BSMDatensatz.AVWBsMO) = strBsMVorhanden Then
-#                               If strBsMRelevanz = "" Then strBsMRelevanz = "BsM-O" Else strBsMRelevanz = strBsMRelevanz & ",BsM-O"
-#                           End If
-#                           If CStr(BSMDatensatz.AVWBsMSe) = strBsMVorhanden Then
-#                               If strBsMRelevanz = "" Then strBsMRelevanz = "BsM-Se" Else strBsMRelevanz = strBsMRelevanz & ",BsM-Se"
-#                           End If
-#                           BSMDatensatz.BSMRelevanz = strBsMRelevanz
-#                           
+                            bsm_dataset.set_relevance()
+                            ### refactored as BSMDaten.set_relevance()
+                            ### called from BSMDaten.__init__
 #                           'ASIL einlesen
-#                           BSMDatensatz.AVWASIL = CStr(rngAVWAttribute(10).Offset(lngZeile, 0).Value)
-#                           
-#                           'Vorgänger-ID einlesen
-#                           If blnAVWVorgaengerIDsVerwenden Then
-#                               BSMDatensatz.AVWVorgaengerID = CStr(rngAVWAttribute(23).Offset(lngZeile, 0).Value)  'BSMDatensatz.AVWVorgaengerID = CStr(rngAVWAttribute(22).Offset(lngZeile, 0).Value)
-#                           End If
-#                           
-#                           'Kommentar Redaktionskreis und temp1_Text aus AVW-Rohdaten einlesen
-#                           If InStr(CStr(UCase(rngAVWAttribute(20).Offset(lngZeile, 0).Value)), "#ABGELEHNT_NICHT_TESTBAR") > 0 Or InStr(CStr(UCase(rngAVWAttribute(21).Offset(lngZeile, 0).Value)), "#ABGELEHNT_NICHT_TESTBAR") > 0 Then
-#                               BSMDatensatz.AVWAbgelehntNichtTestbar = "x"
-#                           End If
-#                           'Kommentar Redaktionskreis und temp1_Text aus AVW-Vorgänger einlesen
-#                           Set AVWVorgaenger = New AVWVorgaenger
-#                           Set AVWVorgaenger = find_predecessor_AVW(AVWVorgaengerList, BSMDatensatz.AVWVorgaengerID)
-#                           If Not AVWVorgaenger Is Nothing Then
-#                               If AVWVorgaenger.AbgelehntNichtTestbar = "x" Then
-#                                   If BSMDatensatz.AVWAbgelehntNichtTestbar = "" Then
-#                                       BSMDatensatz.AVWAbgelehntNichtTestbar = "x (Master)"
-#                                   Else
-#                                       BSMDatensatz.AVWAbgelehntNichtTestbar = BSMDatensatz.AVWAbgelehntNichtTestbar & vbCrLf & "x (Master)"
-#                                   End If
-#                               End If
-#                           End If
+                            ### Moved to BSMDaten.__init__
 #                           
 #                           'Geplante I-Stufe einlesen
-#                           strIStufe = ""
-#                           strIStufeMin = ""
-#                           If BSMDatensatz.AVWUmsetzer <> "" Then
-#                               varUmsetzer = Split(BSMDatensatz.AVWUmsetzer, ",", , vbBinaryCompare)
-#                               For intUmsetzer = 0 To UBound(varUmsetzer, 1)
-#                                   strIStufe = FRUTimingList.Item(BSMDatensatz.AVWFeature & BSMDatensatz.AVWReifegrad & Trim(varUmsetzer(intUmsetzer))).IStufe
-#                                   If strIStufeMin = "" Then
-#                                       strIStufeMin = strIStufe
-#                                   ElseIf InStr(strIStufe, "IS") > 0 Then
-#                                       If strIStufe < strIStufeMin Then
-#                                           strIStufeMin = strIStufe
-#                                       End If
-#                                   End If
-#                               Next intUmsetzer
-#                           End If
-#                           BSMDatensatz.IStufe = strIStufeMin
+                            ### refactored as BSMDaten.get_IStufe()
+                            ### called from BSMDaten.__init__
 #                           
-#                           'Cluster Testing einlesen
-#                           BSMDatensatz.ClusterTesting = CStr(rngAVWAttribute(18).Offset(lngZeile, 0).Value)
-#       
-#                           'Anforderungsverantwortliche einlesen
-#                           BSMDatensatz.AVWAnforderungsverantwortliche = CStr(rngAVWAttribute(22).Offset(lngZeile, 0).Value)
-#                           
-#                           'Projekt MEB21 - Temp11_Auswahlfeld einlesen
-#                           If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
-#                               BSMDatensatz.AVWTemp11_Auswahlfeld = CStr(rngAVWAttributeMEB21(1).Offset(lngZeile, 0).Value)
-#                           End If
+                            ### Moved to BSMDaten.__init__
 #                           
 #                           'Verifikationskriterium zuordnen
 #                           'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
-#                           blnVKZugeordnet = False
-#                           For Each varErfassteVKItem In verifikationKritList
-#                               'Abgleich über Element-ID des Vorgängers
-#                               For Each varVKAnfID In varErfassteVKItem.anf_ids
-#                                   If varVKAnfID = BSMDatensatz.AVWVorgaengerID Then
-#                                       'Zugehörigkeit des Verifikationskriteriums zu aktuellen Anforderungen kennzeichnen
-#                                       varErfassteVKItem.AnforderungVorhanden = True
-#                                       'VK-ID aufnehmen
-#                                       BSMDatensatz.Verifikationskriterium.Add Item:=varErfassteVKItem
-#                                       'Geplante I-Stufe für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.IStufe <> "" Then
-#                                           varErfassteVKItem.anf_IStufen.Add Item:=BSMDatensatz.IStufe
-#                                       End If
-#                                       'Umsetzer für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWUmsetzer <> "" Then
-#                                           varErfassteVKItem.anf_Umsetzer.Add Item:=BSMDatensatz.AVWUmsetzer
-#                                       End If
-#                                       'BsM-Relevanz für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.BSMRelevanz <> "" Then
-#                                           varErfassteVKItem.anf_BsMRelevanz.Add Item:=BSMDatensatz.BSMRelevanz
-#                                       End If
-#                                       'ASIL für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWASIL <> "" Then
-#                                           varErfassteVKItem.anf_ASIL.Add Item:=BSMDatensatz.AVWASIL
-#                                       End If
-#                                       'Feature für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWFeature <> "" Then
-#                                           varErfassteVKItem.anf_Feature.Add Item:=BSMDatensatz.AVWFeature
-#                                       End If
-#                                       'Reifegrad für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWReifegrad <> "" Then
-#                                           varErfassteVKItem.anf_Reifegrad.Add Item:=BSMDatensatz.AVWReifegrad
-#                                       End If
-#                                       'Modulverantwortliche für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWMV <> "" Then
-#                                           varErfassteVKItem.anf_MV.Add Item:=BSMDatensatz.AVWMV
-#                                       End If
-#                                       'LAH-ID für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWDokumentID <> "" Then
-#                                           varErfassteVKItem.anf_LAHID.Add Item:=BSMDatensatz.AVWDokumentID
-#                                       End If
-#                                       'LAH-Namen für Verifikationskritierum erfassen
-#                                       If BSMDatensatz.AVWDokumentName <> "" Then
-#                                           varErfassteVKItem.addLAHName (BSMDatensatz.AVWDokumentName)
-#                                       End If
-#                                       'Cluster Testing für Verifikationskriterium erfassen
-#                                       If BSMDatensatz.ClusterTesting <> "" Then
-#                                           varErfassteVKItem.anf_ClusterTesting.Add Item:=BSMDatensatz.ClusterTesting
-#                                       End If
-#                                       'Anforderungsverantwortliche für Verifikationskriterium erfassen
-#                                       If BSMDatensatz.AVWAnforderungsverantwortliche <> "" Then
-#                                           varErfassteVKItem.anf_Anforderungsverantwortliche.Add Item:=BSMDatensatz.AVWAnforderungsverantwortliche
-#                                       End If
-#                                       'Temp11_Auswahlfeld für Verifikationskriterium erfassen
-#                                       If BSMDatensatz.AVWTemp11_Auswahlfeld <> "" Then
-#                                           varErfassteVKItem.anf_Temp11_Auswahlfeld.Add Item:=BSMDatensatz.AVWTemp11_Auswahlfeld
-#                                       End If
-#                                       
-#                                       'Innere Schleife beenden, da es zu jeder Anforderung nur ein Verifikationskriterium gibt
-#                                       blnVKZugeordnet = True
-#                                       Exit For
-#                                   End If
-#                               Next varVKAnfID
-#                               'Äußere Schleife beenden, da es zu jeder Anforderung nur ein Verifikationskriterium gibt
-#                               If blnVKZugeordnet Then Exit For
-#                           Next varErfassteVKItem
-#                           
+                            self.assign_verification_criterion(bsm_dataset)
+#                  
 #                           'Testfall zuordnen
-#                           blnTFZugeordnet = False
-#                           For Each varErfassteTFItem In testfallList
-#                               'Abgleich über Element-ID
-#                               For Each varTFAnfID In varErfassteTFItem.TF_anfIDs
-#                                   If varTFAnfID = BSMDatensatz.AVWVorgaengerID Then
-#                                       BSMDatensatz.Testfaelle.Add Item:=varErfassteTFItem
-#                                       blnTFZugeordnet = True
-#                                       Exit For
-#                                   End If
-#                               Next varTFAnfID
-#                           Next varErfassteTFItem
+                            self.assign_test_case(bsm_dataset)
 #                           
 #                           'Erfasste AVW-Rohdaten in globaler AVW-Rohdaten-Liste hinzufügen
 #                           BsMDatenList.Add Item:=BSMDatensatz, Key:=BSMDatensatz.AVWID
+                            self.bsm_datasets[bsm_dataset.avw_id] = bsm_dataset
 #           '            End If
 #           '        End If
 #               End If
 #           End If
 #       
 #           'Fortschritt anzeigen
+            ###TODO: Show progress
 #           If lngZeile Mod 100 = 0 Then
 #               Debug.Print "Anforderungen einlesen: " & lngZeile & "/" & wksAVW.UsedRange.Rows.Count - rngAVWAttribute(1).Row
 #           End If
@@ -1405,30 +1167,33 @@ class ATEStatus:
 #   End Sub
 #   
 #   Private Sub EinlesenAVWVorgaengerRohdaten(ByVal wksAVWMaster As Worksheet, ByRef strAVWMasterAttribute() As String, ByRef rngAVWMasterAttribute() As Range)
-    def EinlesenAVWVorgaengerRohdaten(self):
-        pass #TODO
+    def read_predecessor_requirement_raw_data(self):
 #       Dim lngZeile As Long                    'Long-Variable für aktuell einzulesende Zeile
 #       Dim AVWVorgaenger As AVWVorgaenger      'Klasse AVWVorgaenger
 #       
 #       'Anforderungen einlesen
 #       'AVW: #1: ID, #2: temp1_Text, #3: Kommentar Redaktionskreis
 #       For lngZeile = 1 To wksAVWMaster.UsedRange.Rows.Count - rngAVWMasterAttribute(1).Row
+        for row in range(0, len(self.info_AVW_master.columns)):
 #           'Nur Datensätze bei vorhandener Anforderungs-ID übernehmen
 #           If rngAVWMasterAttribute(1).Offset(lngZeile, 0).Value <> "" Then
+            if str(self.info_AVW_master.columns['ID'][row]) != "":
 #               'Neuen AVW-Datensatz anlegen
 #               Set AVWVorgaenger = New AVWVorgaenger
 #               'Master-ID einlesen
-#               AVWVorgaenger.ID = CStr(rngAVWMasterAttribute(1).Offset(lngZeile, 0).Value)
-#               'Kommentar Redaktionskreis und temp1_Text einlesen
-#               If InStr(CStr(UCase(rngAVWMasterAttribute(2).Offset(lngZeile, 0).Value)), "#ABGELEHNT_NICHT_TESTBAR") > 0 Or InStr(CStr(UCase(rngAVWMasterAttribute(3).Offset(lngZeile, 0).Value)), "#ABGELEHNT_NICHT_TESTBAR") > 0 Then
-#                   AVWVorgaenger.AbgelehntNichtTestbar = "x"
-#               End If
+                ### Moved to AVWVorgaenger.__init__
+                vw_requirement_predecessor = AVWVorgaenger(
+                    self.info_AVW_master.columns,
+                    row,
+                )
 #               
 #               'Erfasste AVW-Vorgänger in globaler AVW-Vorgaenger-Liste hinzufügen
 #               AVWVorgaengerList.Add Item:=AVWVorgaenger, Key:=AVWVorgaenger.ID
+                self.predecessor_index_AVW[vw_requirement_predecessor.id] = vw_requirement_predecessor
 #           End If
 #       
 #           'Fortschritt anzeigen
+            ###TODO: Show progress
 #           If lngZeile Mod 100 = 0 Then
 #               Debug.Print "Anforderungen aus Masterbereich einlesen: " & lngZeile & "/" & wksAVWMaster.UsedRange.Rows.Count - rngAVWMasterAttribute(1).Row
 #           End If
@@ -1496,8 +1261,8 @@ class ATEStatus:
 #   End Function
 #   
 #   Private Function AuswertungLAHBlacklist(ByRef strLAHBlacklist() As String, ByVal strLAH As String)
-    def AuswertungLAHBlacklist(self) -> bool:
-        pass #TODO
+    def blacklist_evaluation_LAH(self, str_lah:str) -> bool:
+        ### TOBEDEL Unused. Non required use "in" operator instead.
 #       Dim lngBlacklistZaehler As Long     'Long-Zähler für Blacklist
 #       
 #       AuswertungLAHBlacklist = True
@@ -1509,6 +1274,7 @@ class ATEStatus:
 #               End If
 #           Next lngBlacklistZaehler
 #       End If
+        return not str_lah in self.blacklist_LAHB
 #   End Function
 #   
 #   Private Function FindeVK(ByRef Liste As Collection, ByVal strKey As String) As Verifikationskriterium
