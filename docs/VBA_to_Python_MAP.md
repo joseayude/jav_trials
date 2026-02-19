@@ -58,7 +58,7 @@ This document maps the VBA procedures/subs from the `ate_status_sequence.puml` f
   - Python:
     - AVW attributes: `AVW_ATTRIBUTE_DE` in `src/xls_management/ate/data.py`
     - Project-specific import: `ProjectDBInfo.einlesen_datei()` in `src/xls_management/ate/om/project_db_info.py`
-    - Models: `BSMDaten` (`src/xls_management/ate/om/bsm_daten.py`), `AVWVorgaenger` (`src/xls_management/ate/om/avw_vorganenger.py`)
+    - Models: `BSMDaten` (`src/xls_management/ate/om/bsm_data.py`), `AVWVorgaenger` (`src/xls_management/ate/om/avw_vorganenger.py`)
     - Orchestrator methods: `ATEStatus.read_raw_data_AVW()`, `ATEStatus.read_predecesor_raw_data_AVW()`, `ATEStatus.read_successor_raw_data_AVW()` in `src/xls_management/ate/tracking.py`
 
 - AusgabeATEStatus / AusgabeTDStatus
@@ -80,7 +80,7 @@ This document maps the VBA procedures/subs from the `ate_status_sequence.puml` f
 - `src/xls_management/ate/om/db_info.py`
   - `DBInfo` and `ProjectDBInfo` handle file picking + attribute detection; good place for reader utilities.
 - `src/xls_management/ate/om/*.py`
-  - Domain models are present (`bsm_daten.py`, `avw_vorganenger.py`, `fru_timming.py`) — extend these with parsers/mapping from DataFrame rows to instances.
+  - Domain models are present (`bsm_data.py`, `avw_vorganenger.py`, `fru_timming.py`) — extend these with parsers/mapping from DataFrame rows to instances.
 - `src/xls_management/workbook.py`
   - Enhance with write helpers if the ATE output needs structured writing (e.g., `write_sheet_from_df()`), and context manager support for open/save/close.
 

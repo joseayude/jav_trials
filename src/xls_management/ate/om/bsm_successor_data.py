@@ -1,18 +1,18 @@
 import pandas as pd
-from xls_management.ate.om.avw_vorganenger import AVWVorgaenger
-from xls_management.ate.om.bsm_daten import BSMDaten
+from xls_management.ate.om.vw_requirement_predecessor import VWRequirementPredecessor
+from xls_management.ate.om.bsm_data import BSMData
 from xls_management.ate.om.fru_timming import FRUTiming
 from xls_management.ate.om.verificationskriterium import Verificationskriterium
 
-
-class BSMNachfolgerDaten(BSMDaten):
+#class BSMNachfolgerDaten
+class BSMSuccessorData(BSMData):
     def __init__(
         self,
         columns:pd.DataFrame,
         row:int,
         fru_timing_index: dict[str,FRUTiming],
         use_predecessor_ids:bool,
-        predecessor_index:dict[str,AVWVorgaenger ],
+        predecessor_index:dict[str,VWRequirementPredecessor],
         is_specific: bool = False,
     ):
         super().__init__(columns, row, fru_timing_index, is_specific)

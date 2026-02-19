@@ -1,12 +1,12 @@
 import re
-from xls_management.ate.om.bsm_daten import BSMDaten
-from xls_management.ate.om.bsm_nachfolger_daten import BSMNachfolgerDaten
+from xls_management.ate.om.bsm_data import BSMData
+from xls_management.ate.om.bsm_successor_data import BSMSuccessorData
 from xls_management.ate.om.db_info import DBInfo 
 from xls_management.ate.om.fru_timming import FRUTiming
 from xls_management.ate.om.project_db_info import ProjectDBInfo
 from xls_management.ate.om.test_case import TestCase
 from xls_management.ate.om.verificationskriterium  import Verificationskriterium
-from xls_management.ate.om.avw_vorganenger import AVWVorgaenger
+from xls_management.ate.om.vw_requirement_predecessor import VWRequirementPredecessor
 from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
 from xls_management.ate.data import AVW_ATTRIBUTE_DE
 from xls_management.ate.project import project_combo_box
@@ -942,7 +942,7 @@ class ATEStatus:
 #       Next lngZeile
 #   End Sub
 #   
-    def assign_verification_criterion(self, bsm_dataset:BSMDaten) -> None:
+    def assign_verification_criterion(self, bsm_dataset:BSMData) -> None:
 #       blnVKZugeordnet = False
 #       For Each varErfassteVKItem In verifikationKritList
         for verification_criterion in self.verification_criteria.values():
@@ -956,7 +956,7 @@ class ATEStatus:
                     verification_criterion.requirement_present = True
 #                   'Verifikationskriterium dem aktuellen AVW-Datensatz zuordnen
 #                   bsm_dataset.add_verification_criterion(verification_criterion)
-                    ### moved to BSMDaten.add_verification_criterion()
+                    ### moved to BSMData.add_verification_criterion()
 #                   blnVKZugeordnet = True
 #                   Exit For
                     return
@@ -966,7 +966,7 @@ class ATEStatus:
 #           If blnVKZugeordnet Then Exit For
 #       Next varErfassteVKItem
 
-    def assign_test_cases(self, bsm_dataset:BSMDaten) -> None:
+    def assign_test_cases(self, bsm_dataset:BSMData) -> None:
 #       blnTFZugeordnet = False
         test_case_assigned = False
 #       For Each varErfassteTFItem In testfallList
@@ -1034,25 +1034,25 @@ class ATEStatus:
 #                           'Neuen AVW-Datensatz anlegen
                             #Create new VW requirement dataset
 #                           Set BSMDatensatz = New BSMDaten
-                            bsm_dataset = BSMDaten(
+                            bsm_dataset = BSMData(
                                 self.info_AVW.columns,
                                 row,
                                 self.fru_timming_index,
                                 is_specific = self.project in ['MEB21', 'MQB48W'],
                             )
-                            ### Moved to BSMDaten.__init__
+                            ### Moved to BSMData.__init__
 #                           'Zusammenführung BsM-Relevanz
                             bsm_dataset.set_relevance()
-                            ### refactored as BSMDaten.set_relevance()
-                            ### called from BSMDaten.__init__
+                            ### refactored as BSMData.set_relevance()
+                            ### called from BSMData.__init__
 #                           'ASIL einlesen
-                            ### Moved to BSMDaten.__init__
+                            ### Moved to BSMData.__init__
 #                           
 #                           'Geplante I-Stufe einlesen
-                            ### refactored as BSMDaten.get_IStufe()
-                            ### called from BSMDaten.__init__
+                            ### refactored as BSMData.get_IStufe()
+                            ### called from BSMData.__init__
 #                           
-                            ### Moved to BSMDaten.__init__
+                            ### Moved to BSMData.__init__
 #                           
 #                           'Verifikationskriterium zuordnen
 #                           'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
@@ -1121,7 +1121,7 @@ class ATEStatus:
                         if str(self.info_AVW.columns['Cluster Testing'][row]) != "nicht relevant":
 #                           'Neuen AVW-Datensatz anlegen
 #                           Set BSMDatensatz = New BSMDaten
-                            bsm_dataset = BSMNachfolgerDaten(
+                            bsm_dataset = BSMSuccessorData(
                                 self.info_AVW.columns,
                                 row,
                                 self.fru_timming_index,
@@ -1129,19 +1129,19 @@ class ATEStatus:
                                 self.predecessor_index_AVW,
                                 is_specific = self.project in ['MEB21', 'MQB48W'],
                             )
-                            ### Moved to BSMNachfolgerDaten.__init__
+                            ### Moved to BSMSuccessorData.__init__
 #                           'Zusammenführung BsM-Relevanz
                             bsm_dataset.set_relevance()
-                            ### refactored as BSMDaten.set_relevance()
-                            ### called from BSMDaten.__init__
+                            ### refactored as BSMData.set_relevance()
+                            ### called from BSMData.__init__
 #                           'ASIL einlesen
-                            ### Moved to BSMDaten.__init__
+                            ### Moved to BSMData.__init__
 #                           
 #                           'Geplante I-Stufe einlesen
-                            ### refactored as BSMDaten.get_IStufe()
-                            ### called from BSMDaten.__init__
+                            ### refactored as BSMData.get_IStufe()
+                            ### called from BSMData.__init__
 #                           
-                            ### Moved to BSMDaten.__init__
+                            ### Moved to BSMData.__init__
 #                           
 #                           'Verifikationskriterium zuordnen
 #                           'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
@@ -1182,7 +1182,7 @@ class ATEStatus:
 #               Set AVWVorgaenger = New AVWVorgaenger
 #               'Master-ID einlesen
                 ### Moved to AVWVorgaenger.__init__
-                vw_requirement_predecessor = AVWVorgaenger(
+                vw_requirement_predecessor = VWRequirementPredecessor(
                     self.info_AVW_master.columns,
                     row,
                 )
@@ -1293,7 +1293,7 @@ class ATEStatus:
 #   End Function
 #   
 #   Private Function FindeAVWVorgaenger(ByRef Liste As Collection, ByVal strKey As String) As AVWVorgaenger
-    def find_predecessor_AVW(self, values:dict[str,AVWVorgaenger], key:str) -> AVWVorgaenger|None:
+    def find_predecessor_AVW(self, values:dict[str,VWRequirementPredecessor], key:str) -> VWRequirementPredecessor|None:
         return values.get(key, None)
         #TOBEDEL Unused. Non required use get method instead.
 #       Dim ListenObjekt As AVWVorgaenger

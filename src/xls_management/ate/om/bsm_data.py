@@ -5,8 +5,8 @@ from xls_management.ate.om.fru_timming import FRUTiming
 from xls_management.ate.om.test_case import TestCase
 from xls_management.ate.om.verificationskriterium import Verificationskriterium
 
-
-class BSMDaten:
+#class BSMDaten (DE)
+class BSMData:
 #Option Explicit
 #
 
@@ -69,7 +69,7 @@ class BSMDaten:
 #       BSMDatensatz.AVWBsMSe = CStr(rngAVWAttribute(16).Offset(lngZeile, 0).Value)
         self.avw_bsm_se = str(columns['BSM-Se Bewertung'][row])
         self.set_relevance()
-        ### refactored as BSMDaten.set_relevance()
+        ### refactored as BSMData.set_relevance()
 #       'ASIL einlesen
 #       BSMDatensatz.AVWASIL = CStr(rngAVWAttribute(10).Offset(lngZeile, 0).Value)
         self.avw_asil = str(columns['ASIL'][row])

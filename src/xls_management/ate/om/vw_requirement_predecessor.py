@@ -1,7 +1,7 @@
 import pandas as pd
 
-
-class AVWVorgaenger: 
+#class AVWVorgaenger (DE)
+class VWRequirementPredecessor: 
 #Option Explicit
 #
 
