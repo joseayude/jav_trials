@@ -1,4 +1,6 @@
+from datetime import date
 import re
+
 from xls_management.ate.om.bsm_data import BSMData
 from xls_management.ate.om.bsm_successor_data import BSMSuccessorData
 from xls_management.ate.om.db_info import DBInfo 
@@ -8,7 +10,19 @@ from xls_management.ate.om.test_case import TestCase
 from xls_management.ate.om.verificationskriterium  import Verificationskriterium
 from xls_management.ate.om.vw_requirement_predecessor import VWRequirementPredecessor
 from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
-from xls_management.ate.data import AVW_ATTRIBUTE_DE
+from xls_management.ate.om.test_environment_evaluation import TestEnvironmentEvaluations
+
+from xls_management.ate.data_de import (
+    AVW_ATTRIBUTE,
+    OUTPUT_BSM_ATTRIBUTE,
+    TDAA_ATTRIBUTE,
+    MASTER_ATTRIBUTE,
+    TDVK_ATTRIBUTE,
+    TF_ATTRIBUTE,
+    FRU_TIMING_ATTRIBUTE,
+    KNOWN_TEST_ENVIRONMENTS,
+    RELEVANT_TEST_ENVIRONMENT_TOP as RELEVANT_TOP,
+)
 from xls_management.ate.project import project_combo_box
 from xls_management.tui.msgbox import msgbox
 from xls_management.config import ATEConfig
@@ -36,7 +50,7 @@ class ATEStatus:
         self.verification_criteria:dict = {}
 #       'Klasse AVW-Rohdaten
 #       Public BsMDatenList As New Collection
-        self.data_BsM:dict = {}
+        self.bsm_datasets:dict = {}
 #       'Klasse Testfälle
 #       Public testfallList As New Collection
         self.test_cases:dict = {}
@@ -139,6 +153,7 @@ class ATEStatus:
 #       BoxAuswahlProjekt.Caption = "ATE-Status " & strVersionMakro
 #       BoxAuswahlProjekt.Show
         self.project, self.use_predecessor_ids = project_combo_box()
+        self.is_project_specific = self.project in ['MEB21', 'MQB48W']
 #       
 #       If boolAuswahlGetroffen Then
 #           'Eingabe Projekt
@@ -202,7 +217,7 @@ class ATEStatus:
 #               'Verläufe ATE_Status_Verlauf und TD_Status_Verlauf befüllen und Rückgabewerte zusammenführen
 #               Call AusgabeVerlauf(wksBsM, strFehlerATEVerlauf, 1)
 #               Call AusgabeVerlauf(wksTD, strFehlerTDVerlauf, 2)
-            self.ausgabe_verlauf()
+            self.output_history()
             #TODO: errors seems to be join together at next, so taking them together in a self.errors instance
             #     at ATEStatus object seems to be the right thing
             #
@@ -219,14 +234,14 @@ class ATEStatus:
 #               
 #               'Abschlussmeldung
 #               If strWeitereTUsAusgabe = "" Then
-            if self.more_TU_issues == "":
+            if self.other_test_environment_output == "":
 #                   If strFehlerVerlauf = "" Then
-                if self.more_TU_issues == "":
+                if self.errors == "":
+#                       MsgBox "ATE-Status erstellt!" & vbCrLf & vbCrLf & "-----" & vbCrLf & strVersionMakro
                     msgbox(
                         f"ATE-Status was created!\n\n"
                         f"{version('xls_management')}\n"
                     )
-#                       MsgBox "ATE-Status erstellt!" & vbCrLf & vbCrLf & "-----" & vbCrLf & strVersionMakro
 #                   Else
                 else:
                     msgbox(
@@ -244,7 +259,7 @@ class ATEStatus:
                 msgbox(
                     f"ATE-Status was created!\n\n"
                     "Folgende weitere Testumgebungstypen wurden erkannt, aber nicht für den Vergleich berücksichtigt:"
-                    f"{self.more_TU_issues}\n\n"
+                    f"{self.other_test_environment_output}\n\n"
                     "-----\n"
                     f"{version('xls_management')}\n"
                 ) 
@@ -254,7 +269,7 @@ class ATEStatus:
                 msgbox(
                     f"ATE-Status was created!\n\n"
                     "Folgende weitere Testumgebungstypen wurden erkannt, aber nicht für den Vergleich berücksichtigt:"
-                    f"{self.more_TU_issues}\n\n"
+                    f"{self.other_test_environment_output}\n\n"
                     f"{self.errors}\n\n"
                     "-----\n"
                     f"{version('xls_management')}\n"
@@ -321,9 +336,9 @@ class ATEStatus:
 #           strAVWAttribute(23) = "Abgezweigt aus"  'strAVWAttribute(22) = "Abgezweigt aus"
 #       End If
         if self.use_predecessor_ids:
-            self.info_AVW = DBInfo(attributes=AVW_ATTRIBUTE_DE)
+            self.info_AVW = DBInfo(attributes=AVW_ATTRIBUTE)
         else:
-            self.info_AVW = DBInfo(attributes=AVW_ATTRIBUTE_DE[:-1])
+            self.info_AVW = DBInfo(attributes=AVW_ATTRIBUTE[:-1])
 #
 #       'Dateiauswahl und Zuordnung
 #       'Projektspezifisch (MEB21 oder MQB48W) oder allgemein
@@ -408,13 +423,7 @@ class ATEStatus:
         if self.import_attribute[0]:
             self.info_TDVK = DBInfo(
                 path=self.config.get('default_path', '.'),
-                attributes = (
-                    "ID",
-                    "Basierend auf der Anforderung",
-                    "Status",
-                    "Temp1_Text",
-                    "Aktion",
-                )
+                attributes = TDVK_ATTRIBUTE
             )
 #           'Dateiauswahl und Zuordnung
 #           If EinlesenDatei("Verifikationskriterien", strTDVKAttribute, rngTDVKAttribute, wbTDVK, wksTDVK, strFehlerTDVK, strDateinamen(2)) Then
@@ -455,13 +464,7 @@ class ATEStatus:
 #           strTDAAAttribute(5) = "Testumgebungstyp"
             self.info_TDAA = DBInfo(
                 path=self.config.get('default_path', '.'),
-                attributes = (
-                    "ID",
-                    "Enthalten in",
-                    "Status",
-                    "Testinstanz",
-                    "Testumgebungstyp" ,
-                )
+                attributes = TDAA_ATTRIBUTE
             )
 #           'Dateiauswahl und Zuordnung
 #           If EinlesenDatei("Absicherungsaufträge", strTDAAAttribute, rngTDAAAttribute, wbTDAA, wksTDAA, strFehlerTDAA, strDateinamen(3)) Then
@@ -504,15 +507,7 @@ class ATEStatus:
         if self.import_attribute[2]:
             self.info_TF = DBInfo(
                 path=self.config.get('default_path', '.'),
-                attributes = (
-                    "ID",
-                    "Status",
-                    "Testfallname",
-                    "Sonstige-Varianten",
-                    "Basierend auf Testdesign",
-                    "verifiziert",
-                    "Testinstanz",
-                )
+                attributes = TF_ATTRIBUTE
             )
 #           'Dateiauswahl und Zuordnung
 #           If EinlesenDatei("Testfälle", strTFAttribute, rngTFAttribute, wbTF, wksTF, strFehlerTF, strDateinamen(4)) Then
@@ -552,12 +547,7 @@ class ATEStatus:
 #           strFRUTimingAttribute(4) = "FE_Meilenstein" 'vorher "Zuordnung zu I-Stufe"
             self.info_fru_timming = DBInfo(
                 path=self.config.get('default_path', '.'),
-                attributes = (
-                    "FeatureName",
-                    "Reifegrad",  #vorher "RG"
-                    "Umsetzer",
-                    "FE_Meilenstein", #vorher "Zuordnung zu I-Stufe",
-                )
+                attributes = FRU_TIMING_ATTRIBUTE,
             )
 #           'Dateiauswahl und Zuordnung
 #           If EinlesenDatei("FRU-Timing", strFRUTimingAttribute, rngFRUTimingAttribute, wbFRUTiming, wksFRUTiming, strFehlerFRUTiming, strDateinamen(5)) Then
@@ -599,11 +589,7 @@ class ATEStatus:
 #               strAVWMasterAttribute(3) = "Kommentar Redaktionskreis"
                 self.info_AVW_master = DBInfo(
                     path=self.config.get('default_path', '.'),
-                    attributes = (
-                        "ID",
-                        "temp1_Text",
-                        "Kommentar Redaktionskreis",
-                    )
+                    attributes = MASTER_ATTRIBUTE
                 )
 #               'Dateiauswahl und Zuordnung
 #               If EinlesenDatei("Anforderungen Masterbereich", strAVWMasterAttribute, rngAVWMasterAttribute, wbAVWMaster, wksAVWMaster, strFehlerAVWMaster, strDateinamen(6)) Then
@@ -1033,12 +1019,11 @@ class ATEStatus:
                         if str(self.info_AVW.columns['Cluster Testing'][row]) != "nicht relevant":
 #                           'Neuen AVW-Datensatz anlegen
                             #Create new VW requirement dataset
-#                           Set BSMDatensatz = New BSMDaten
                             bsm_dataset = BSMData(
                                 self.info_AVW.columns,
                                 row,
                                 self.fru_timming_index,
-                                is_specific = self.project in ['MEB21', 'MQB48W'],
+                                is_specific = self.is_project_specific,
                             )
                             ### Moved to BSMData.__init__
 #                           'Zusammenführung BsM-Relevanz
@@ -1127,7 +1112,7 @@ class ATEStatus:
                                 self.fru_timming_index,
                                 self.use_predecessor_ids,
                                 self.predecessor_index_AVW,
-                                is_specific = self.project in ['MEB21', 'MQB48W'],
+                                is_specific = self.is_project_specific,
                             )
                             ### Moved to BSMSuccessorData.__init__
 #                           'Zusammenführung BsM-Relevanz
@@ -1309,7 +1294,6 @@ class ATEStatus:
 #   
 #   Private Sub AusgabeATEStatus(ByVal wbBsM As Workbook, ByRef wksBsM As Worksheet, ByRef strBsMAttribute() As String, ByRef rngBsMAttribute() As Range, ByRef strWeitereTUsAusgabe As String, ByRef strDateinamen() As String, ByVal strProjekt As String)
     def output_status(self):
-        pass    #TODO
 #       Dim lngDatensatz As Long                        'Long-Variable für aktuell zu schreibenden Datensatz
 #       Dim varErfassteBsMDatensatzItem As Variant      'Variant für Item im globalen BsM-Datensatz
 #       Dim varErfassteTDAAItem As Variant              'Variant für Item aus den jeweiligen Absicherungsaufträgen
@@ -1356,11 +1340,15 @@ class ATEStatus:
 #       
 #       lngDatensatz = 1
 #       If blnAVWVorgaengerIDsVerwenden = False Then
+        if self.use_predecessor_ids:
 #           intZielspalte = 0
 #           ReDim strBsMAttribute(1 To 34)
+            bsm_attributes = OUTPUT_BSM_ATTRIBUTE[1:]
 #       Else
+        else:
 #           intZielspalte = 1
 #           ReDim strBsMAttribute(0 To 34)
+            bsm_attributes = OUTPUT_BSM_ATTRIBUTE
 #       End If
 #       ReDim rngBsMAttribute(LBound(strBsMAttribute, 1) To UBound(strBsMAttribute, 1))
 #       'Name und Position der Tabellenattribute
@@ -1439,12 +1427,16 @@ class ATEStatus:
 #       
 #       'Ergänzung projektspezifischer Attribute
 #       If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
+        if not self.is_project_specific:
 #           ReDim Preserve strBsMAttribute(LBound(strBsMAttribute, 1) To UBound(strBsMAttribute, 1) + 1)
 #           ReDim Preserve rngBsMAttribute(LBound(strBsMAttribute, 1) To UBound(strBsMAttribute, 1))
 #           strBsMAttribute(35) = "Temp11_Auswahlfeld"
+            bsm_attributes = bsm_attributes[:-1]
 #           Set rngBsMAttribute(35) = wksBsM.Cells(lngDatensatz, intZielspalte + 35)    ' => nachträglich an richtige Stelle verschieben?
 #       End If
+        bsm_output_data = {name : [] for name in bsm_attributes}
 #       
+        ###TODO formatting of the output table header
 #       'Tabellenkopf anlegen
 #       For i = LBound(strBsMAttribute, 1) To UBound(strBsMAttribute, 1)
 #           With rngBsMAttribute(i)
@@ -1484,8 +1476,9 @@ class ATEStatus:
 #       
 #       'Zähler für weitere Testumgebungen
 #       intWeitereTUs = 0
+        other_test_environment_top = 0
 #       strWeitereTUsAusgabe = ""
-        self.more_TU_issues = ''
+        self.other_test_environment_output = ''
 #       
 #       'Tabelle füllen
 #       'Relevante Testumgebungen für Abgleich zwischen TDs und TFs
@@ -1493,81 +1486,126 @@ class ATEStatus:
 #       For i = 1 To intRelevantekTUs
 #           strAbgleichTUs(i) = strBekannteTUs(i)
 #       Next i
+        self.relevant_test_environments = KNOWN_TEST_ENVIRONMENTS[:RELEVANT_TOP]
 #       
 #       lngDatensatz = 0
+        dataset_count = 0
+        today = date.today()
+        week_number = int(today.strftime('%W')) + 1
+        date_signature = f"{today.year}/{week_number:03d}"
 #       'BsM-Daten ausgeben
 #       For Each varErfassteBsMDatensatzItem In BsMDatenList
+        for bsm_dataset in self.bsm_datasets.values():
 #           'Zähler für Datensatz/Zeile
 #           lngDatensatz = lngDatensatz + 1
+            dataset_count += 1
 #           'Kalenderwoche der Datenauswertung
 #           If WorksheetFunction.WeekNum(Date, 2) < 10 Then
-#               rngBsMAttribute(34).Offset(lngDatensatz, 0).Value = CStr(Year(Date) & "/" & "0" & WorksheetFunction.WeekNum(Date, 2))
+#               rngBsMAttribute(34).Offset(lngDatensatz, 0).Value = CStr(Year(Date) & "/" & "0" & WorksheetFunction.WeekNum(Date, 2))      
 #           Else
 #               rngBsMAttribute(34).Offset(lngDatensatz, 0).Value = CStr(Year(Date) & "/" & WorksheetFunction.WeekNum(Date, 2))
 #           End If
+            bsm_output_data['KW Datenauswertung'].append(date_signature)
 #           'Vorgänger ID
 #           If blnAVWVorgaengerIDsVerwenden Then
+            if self.use_predecessor_ids:
 #               rngBsMAttribute(0).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWVorgaengerID
+                bsm_output_data['Abgezweigt aus'].append(bsm_dataset.avw_predecessor_id)
 #           End If
 #           'Ausgabe ID
 #           rngBsMAttribute(1).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWID
+            bsm_output_data['ID'].append(bsm_dataset.avw_id)
 #           'Ausgabe Dokument-ID
 #           rngBsMAttribute(2).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWDokumentID
+            bsm_output_data
 #           'Ausgabe BsM-Relevanz
 #           rngBsMAttribute(3).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.BSMRelevanz
+            bsm_output_data['BsM-Relevanz'].append(bsm_dataset.relevance)
 #           'Ausgabe BSM-SaFuSi
 #           rngBsMAttribute(4).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWBsMSaFuSi
+            bsm_output_data['BSM-SaFuSi Bewertung'].append(bsm_dataset.avw_bsm_safusi)
 #           'Ausgabe BSM-ZZ
 #           rngBsMAttribute(5).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWBsMZZ
+            bsm_output_data['BSM-ZZ Bewertung'].append(bsm_dataset.avw_bsm_zz)
 #           'Ausgabe BSM-ED
 #           rngBsMAttribute(6).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWBsMED
+            bsm_output_data['BSM-ED Bewertung'].append(bsm_dataset.avw_bsm_ed)
 #           'Ausgabe BSM-FFF
 #           rngBsMAttribute(7).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWBsMFFF
+            bsm_output_data['BSM-FFF Bewertung'].append(bsm_dataset.avw_bsm_fff)
 #           'Ausgabe BSM-O
 #           rngBsMAttribute(8).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWBsMO
+            bsm_output_data['BSM-O Bewertung'].append(bsm_dataset.avw_bsm_o)
 #           'Ausgabe BSM-Se
 #           rngBsMAttribute(9).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWBsMSe
+            bsm_output_data['BSM-Se Bewertung'].append(bsm_dataset.avw_bsm_se)
 #           'Ausgabe ASIL
 #           rngBsMAttribute(10).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWASIL
+            bsm_output_data['ASIL'].append(bsm_dataset.avw_asil)
 #           'Ausgabe Feature
 #           rngBsMAttribute(11).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWFeature
+            bsm_output_data['Feature'].append(bsm_dataset.avw_feature)
 #           'Ausgabe Reifegrad
 #           rngBsMAttribute(12).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWReifegrad
+            bsm_output_data['Reifegrad'].append(bsm_dataset.avw_reifegrad)
 #           'Ausgabe Umsetzer
 #           rngBsMAttribute(13).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWUmsetzer
+            bsm_output_data['Umsetzer'].append(bsm_dataset.avw_umsetzer)
 #           'Ausgabe Status
 #           rngBsMAttribute(14).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWStatus
+            bsm_output_data['Status'].append(bsm_dataset.avw_status)
 #           'Ausgabe MV
 #           rngBsMAttribute(20).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWMV
+            bsm_output_data['MV'].append(bsm_dataset.avw_mv)
 #           'Ausgabe Kategorie
 #           rngBsMAttribute(21).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWKategorie
+            bsm_output_data['Kategorie'].append(bsm_dataset.avw_kategorie)
 #           'Ausgabe Dokumentenname
 #           rngBsMAttribute(22).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWDokumentName
+            bsm_output_data['Dokument'].append(bsm_dataset.avw_dokument_name)
 #           'Ausgabe #abgelehnt_nicht_testbar
 #           rngBsMAttribute(23).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWAbgelehntNichtTestbar
+            bsm_output_data['#abgelehnt_nicht_testbar'].append(bsm_dataset.avw_abgelehnt_nicht_testbar)
 #           'Ausgabe Zugeordnete I-Stufe
 #           rngBsMAttribute(24).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.IStufe
+            bsm_output_data['Zugeordnete I-Stufe'].append(bsm_dataset.i_stufe)
 #           'Ausgabe Cluster Testing
 #           rngBsMAttribute(29).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.ClusterTesting
+            bsm_output_data['Cluster Testing'].append(bsm_dataset.cluster_testing)
 #           'Ausgabe Projekt
 #           rngBsMAttribute(30).Offset(lngDatensatz, 0).Value = strProjekt
+            bsm_output_data['Projekt'].append(self.project)
 #           'Ausgabe Anforderungsverantwortliche
 #           rngBsMAttribute(33).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWAnforderungsverantwortliche
+            bsm_output_data['Anforderungsverantwortlicher'].append(bsm_dataset.avw_anforderungsverantwortliche)
 #       
 #           'Rücksetzen der Variablen für TU-Abgleich
 #           ReDim intAbgleichTUs(LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1))
+            self.te_comparison_count = [0] * len(self.relevant_test_environments)
 #           ReDim intAuswertungTUs(1 To 31)
+            self.test_environments_evaluation = [0] * 31
 #           ReDim strAuswertungTUs(1 To 31)
+            #test environment (EN) = Testumgebung (DE)
+            #security application (EN) = Absicherungsauftrag (DE)
 #           strAuswertungTUsFehlendeAAs = ""
+            te_evaluation_missing_security_orders = ''
 #           strAuswertungTUsFehlendeTFs = ""
+            te_evaluation_missing_test_cases = ''
 #           intAusgabeAuswertungTUs = 0
+            te_evaluation_int_output = 0
 #           strAusgabeAuswertungTUs = ""
+            te_evaluation_output = ''
 #           strAusgabeAuswertungTUsDetails = ""
+            te_evaluation_output_details = ''
 #       
 #           'Auswertung TF
 #           strTestfaelle = ""
+            test_case = ''
 #           If varErfassteBsMDatensatzItem.Testfaelle.Count > 0 Then
+            if len(bsm_dataset.testfaelle) > 0:
+                test_case = '\n'.join([f"{tc.tf_id} - {tc.tf_status} - {tc.tf_testinstanz} - {tc.tf_testumgebungstyp}" for tc in bsm_dataset.testfaelle]) 
 #               For Each varErfassteTFItem In varErfassteBsMDatensatzItem.Testfaelle
+                for test_case_item in bsm_dataset.testfaelle:
 #                   'Testfälle zusammenführen
 #                   If strTestfaelle = "" Then
 #                       strTestfaelle = varErfassteTFItem.TF_ID & " - " & varErfassteTFItem.TF_Status & " - " & varErfassteTFItem.TF_Testinstanz & " - " & varErfassteTFItem.TF_Testumgebungstyp
@@ -1577,54 +1615,83 @@ class ATEStatus:
 #       
 #                   'Erfassung der vorhandenen relevanten Testumgebungen
 #                   blnTFTUZugeordnet = False
+                    assignted_tc_te = False
 #                   For i = LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1)
+                    for i in range(len(self.relevant_test_environments)):
 #                       If varErfassteTFItem.TF_Testumgebungstyp = strAbgleichTUs(i) Then
+                        if test_case_item.tf_testumgebungstyp == self.relevant_test_environments[i]:
 #                           blnTFTUZugeordnet = True
+                            assignted_tc_te = True
 #                           'Unterscheidung nach Status des Testfalls
 #                           If varErfassteTFItem.TF_Status = "Operativ" Then
+                            if test_case_item.tf_status == "Operativ":
 #                               'Nicht operative Testfälle bereits erfasst?
 #                               If intAbgleichTUs(i) = 0 Then
+                                if self.te_comparison_count[i] == 0:
 #                                   intAbgleichTUs(i) = 10
+                                    self.te_comparison_count[i] = 10
 #                               ElseIf intAbgleichTUs(i) = 20 Then
+                                elif self.te_comparison_count[i] == 20:
 #                                   intAbgleichTUs(i) = 30
+                                    self.te_comparison_count[i] = 30
 #                               End If
 #                           Else
+                            else:
 #                               'Operative Testfälle bereits erfasst?
 #                               If intAbgleichTUs(i) = 0 Then
+                                if self.te_comparison_count[i] == 0:
 #                                   intAbgleichTUs(i) = 20
+                                    self.te_comparison_count[i] = 20
 #                               ElseIf intAbgleichTUs(i) = 10 Then
+                                elif self.te_comparison_count[i] == 10:
 #                                   intAbgleichTUs(i) = 30
+                                    self.te_comparison_count[i] = 30
 #                               End If
 #                           End If
 #                       End If
 #                   Next i
 #       '            'Restliche bekannte TUs abgleichen
 #       '            If blnTFTUZugeordnet = False Then
+                    if not assignted_tc_te:
 #       '                For i = intRelevantekTUs + 1 To UBound(strBekannteTUs, 1)
+                        for i in range(RELEVANT_TOP, len(KNOWN_TEST_ENVIRONMENTS)):
 #       '                    If varErfassteTFItem.TF_Testumgebungstyp = strBekannteTUs(i) Then
+                            if test_case_item.tf_testumgebungstyp == KNOWN_TEST_ENVIRONMENTS[i]:
 #       '                        blnTFTUZugeordnet = True
+                                assignted_tc_te = True
+                                break
 #       '                        Exit For
 #       '                    End If
 #       '                Next i
 #       '            End If
 #                   'Weitere TUs erfassen
 #                   If blnTFTUZugeordnet = False Then
+                    if not assignted_tc_te:
 #                       If intWeitereTUs > 0 Then
+                        if other_test_environment_top > 0:
 #                           For intWeitereTUsZaehler = 1 To intWeitereTUs
+                            for other_te_i in range(other_test_environment_top):
 #                               If strWeitereTUs(intWeitereTUsZaehler) = varErfassteTFItem.TF_Testumgebungstyp Then
+                                if self.other_test_environment[other_te_i] == test_case_item.tf_testumgebungstyp:
 #                                   blnTFTUZugeordnet = True
+                                    assignted_tc_te = True
 #                                   Exit For
+                                    break
 #                               End If
 #                           Next intWeitereTUsZaehler
 #                           If blnTFTUZugeordnet = False Then
+                            if not assignted_tc_te:
 #                               intWeitereTUs = intWeitereTUs + 1
 #                               ReDim Preserve strWeitereTUs(1 To intWeitereTUs)
 #                               strWeitereTUs(intWeitereTUs) = varErfassteTFItem.TF_Testumgebungstyp
+                                self.other_test_environment.append(test_case_item.tf_testumgebungstyp)
 #                           End If
 #                       Else
+                        else:
 #                           intWeitereTUs = 1
 #                           ReDim strWeitereTUs(1 To intWeitereTUs)
 #                           strWeitereTUs(intWeitereTUs) = varErfassteTFItem.TF_Testumgebungstyp
+                            self.other_test_environment.append(test_case_item.tf_testumgebungstyp)
 #                       End If
 #                   End If
 #               Next varErfassteTFItem
@@ -1632,70 +1699,111 @@ class ATEStatus:
 #           
 #           'Auswertung TD
 #           strTDAA = ""
+            strTDAA = ''
 #           strTDTiTu = ""
+            strTDTiTu = ''  
 #           blnTIUnerlaubt = False
 #           
 #           'Trennung der Umsetzer für Abgleich der Testinstanzen
 #           varUmsetzer = Split(varErfassteBsMDatensatzItem.AVWUmsetzer, ",", , vbBinaryCompare)
+            varUmsetzer = bsm_dataset.avw_umsetzer.split(",") if bsm_dataset.avw_umsetzer else []
 #           If varErfassteBsMDatensatzItem.AVWUmsetzer <> "" Then
-#           ReDim blnUmsetzer(LBound(varUmsetzer, 1) To UBound(varUmsetzer, 1))
-#           For intUmsetzer = LBound(varUmsetzer, 1) To UBound(varUmsetzer, 1)
-#               blnUmsetzer(intUmsetzer) = False
-#           Next intUmsetzer
+            if bsm_dataset.avw_umsetzer:
+#               ReDim blnUmsetzer(LBound(varUmsetzer, 1) To UBound(varUmsetzer, 1))
+#               For intUmsetzer = LBound(varUmsetzer, 1) To UBound(varUmsetzer, 1)
+#                   blnUmsetzer(intUmsetzer) = False
+#               Next intUmsetzer
+                bln_umsetzer = [False] * len(varUmsetzer)   
 #           End If
 #           
 #           If varErfassteBsMDatensatzItem.Verifikationskriterium.Count > 0 Then
+            if len(bsm_dataset.verifikationskriterium) > 0:
 #               'Ausgabe TD-VK inkl. Sicherheitsprüfung für mehrere Verifikationskriterien
+                first_verification_criterion = bsm_dataset.verifikationskriterium[0]
 #               If varErfassteBsMDatensatzItem.Verifikationskriterium.Count > 1 Then
+                if len(bsm_dataset.verifikationskriterium) > 1:
 #                   rngBsMAttribute(15).Offset(lngDatensatz, 0).Value = "Achtung, mehrere Verifikationskriterien vorhanden! Ausgabe nur des ersten Items." & vbCrLf & _
 #                   varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).VK_ID
+                    bsm_output_data['TD-VK'].append(
+                        'Achtung, mehrere Verifikationskriterien vorhanden! Ausgabe nur des ersten Items.\n'
+                        f'{first_verification_criterion.vk_id}'
+                    )
 #               Else
+                else:
 #                   rngBsMAttribute(15).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).VK_ID
+                    bsm_output_data['TD-VK'].append(first_verification_criterion.vk_id)
 #               End If
 #               'Ausgabe TD-VK Status
 #               rngBsMAttribute(25).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).VK_status
+                bsm_output_data['Status TD-VK'].append(first_verification_criterion.status)
 #               'Ausgabe TD-VK temp1_Text
 #               rngBsMAttribute(31).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).VK_temp1Text
+                bsm_output_data['TD-VK temp1_Text'].append(first_verification_criterion.temp1_test)
 #               'Ausgabe TD-VK Effort Estimation - Aufwandsschätzung auf Basis der Vorkommen von "Use-Case", "Step", "Aktion"
 #               dblTDVKAnzahlUseCases = 1
+                dblTDVKAnzahlUseCases = 1
 #               strTDVKAktion = varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).VK_Aktion
+                strTDVKAktion = first_verification_criterion.aktion
 #               If strTDVKAktion <> "" Then
+                if strTDVKAktion != '':
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USE CASE", "USE-CASE")
+                    strTDVKAktion = re.sub('USE CASE', 'USE-CASE',strTDVKAktion.upper())
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USECASE", "USE-CASE")
 #                   dblTDVKAnzahlUseCases = (Len(strTDVKAktion) - Len(Replace(UCase(strTDVKAktion), "USE-CASE", ""))) / Len("Use-Case")
+                    dblTDVKAnzahlUseCases = (len(strTDVKAktion) - len(re.sub("USE-CASE","", strTDVKAktion)))/ len('Use-Case')
 #                   'Anzahl 1 bei Befüllung ohne Vorkommen der Schlagwörter
 #                   If dblTDVKAnzahlUseCases = 0 Then dblTDVKAnzahlUseCases = 1
+                    if dblTDVKAnzahlUseCases == 0:
+                        dblTDVKAnzahlUseCases = 1
 #               End If
 #               rngBsMAttribute(32).Offset(lngDatensatz, 0).Value = dblTDVKAnzahlUseCases
+                bsm_output_data['TD-VK Effort Estimation'] = dblTDVKAnzahlUseCases
 #              
 #               'Auswertung TD-AA
 #               If varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).Absicherungsauftraege.Count > 0 Then
+                if len(first_verification_criterion.absicherungsauftreage) > 0:
+                    security_order:Absicherungsauftrag
 #                   For Each varErfassteTDAAItem In varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).Absicherungsauftraege
+                    for security_order in first_verification_criterion.absicherungsauftraege:
 #                       'Absicherungsaufträge zusammenführen
 #                       If strTDAA = "" Then
+                        if strTDAA == '':
 #                           strTDAA = varErfassteTDAAItem.abs_ID
+                            strTDAA = security_order.abs_id
 #                       Else
+                        else:
 #                           strTDAA = strTDAA & vbCrLf & varErfassteTDAAItem.abs_ID
+                            strTDAA = f"{strTDAA}\n{security_order.abs_ID}"
 #                       End If
 #                       'Ti-Tu-Kombinationen zusammenführen
 #                       If strTDTiTu = "" Then
+                        if strTDTiTu == '':
 #                           strTDTiTu = varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
+                            strTDTiTu = f'{security_order.testinstanz}: {security_order.testumgebungstyp}'
 #                       Else
+                        else:
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
+                            strTDTiTu = f'{strTDTiTu}\n{security_order.testinstanz}: {security_order.testumgebungstyp}'
 #                       End If
 #                       
 #                       'Auswertung ob relevante Testinstanzen abgedeckt sind
 #                       If varErfassteTDAAItem.testinstanz <> "eigene Organisationseinheit" And varErfassteTDAAItem.testinstanz <> "Dauerlauf Gesamtfahrzeug" And varErfassteTDAAItem.testinstanz <> "Gesamtverbundintegration" And varErfassteTDAAItem.testinstanz <> "HMS" And varErfassteTDAAItem.testinstanz <> "VZM" Then
+                        if security_order.testinstanz not in ['Dauerlauf Gesamtfahrzeug', 'Gesamtverbundintegration', 'HMS', 'VZM']:
 #                           For intUmsetzer = LBound(varUmsetzer, 1) To UBound(varUmsetzer, 1)
+                            for index, implementer in enumerate(varUmsetzer):
 #                               If Trim(varErfassteTDAAItem.testinstanz) = Trim(varUmsetzer(intUmsetzer)) Then
+                                if security_order.testinstanz.strip() == implementer.strip():
 #                                   blnUmsetzer(intUmsetzer) = True
+                                    bln_umsetzer[index] = True
 #                                   Exit For
+                                    break
 #                               End If
 #                           Next intUmsetzer
 #                       End If
 #                       
 #       '                'Auswertung Testinstanz Erlaubt/Unerlaubt
 #       '                If varErfassteTDAAItem.testinstanz <> "eigene Organisationseinheit" And varErfassteTDAAItem.testinstanz <> "Dauerlauf Gesamtfahrzeug" And varErfassteTDAAItem.testinstanz <> "Gesamtverbundintegration" And varErfassteTDAAItem.testinstanz <> "HMS" And varErfassteTDAAItem.testinstanz <> "VZM" Then
+#                           For intUmsetzer = LBound(varUmsetzer, 1) To UBound(varUmsetzer, 1)
 #       '                    If AbgleichUmsetzerTI(varErfassteTDAAItem.testinstanz, varErfassteBsMDatensatzItem.AVWUmsetzer) = False Then
 #       '                        blnTIUnerlaubt = True
 #       '                    End If
@@ -1703,9 +1811,13 @@ class ATEStatus:
 #                       
 #                       'Abgleich der vorhandenen relevanten Testumgebungen
 #                       blnAATUZugeordnet = False
+                        blnAATUZugeordnet = False
 #                       For i = LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1)
+                        for index, test_environment_comparison in enumerate(self.relevant_test_environments):
 #                           If varErfassteTDAAItem.Testumgebungstyp = strAbgleichTUs(i) Then
+                            if security_order.testumgebungstyp == test_environment_comparison:
 #                               blnAATUZugeordnet = True
+                                blnAATUZugeordnet = True
 #                               If intAbgleichTUs(i) = 0 Then
 #                                   'VK-TU vorhanden, kein Testfall vorhanden
 #                                   intAbgleichTUs(i) = 1
@@ -1718,6 +1830,8 @@ class ATEStatus:
 #                               ElseIf intAbgleichTUs(i) = 30 Then
 #                                   'VK-TU vorhanden, Testfälle operativ und nicht operativ
 #                                   intAbgleichTUs(i) = 31
+                                if self.te_comparison_count[index] in (0, 10, 20, 30):
+                                    self.te_comparison_count[index] += 1
 #                               End If
 #                           End If
 #                       Next i
@@ -1731,6 +1845,7 @@ class ATEStatus:
 #       '                    Next i
 #       '                End If
 #                       'Weitere TUs erfassen
+                        #------------------------------------------------------
 #                       If blnAATUZugeordnet = False Then
 #                           If intWeitereTUs > 0 Then
 #                               For intWeitereTUsZaehler = 1 To intWeitereTUs
@@ -1750,107 +1865,163 @@ class ATEStatus:
 #                               strWeitereTUs(intWeitereTUs) = varErfassteTDAAItem.Testumgebungstyp
 #                           End If
 #                       End If
+                        if not blnAATUZugeordnet:
+                            if security_order.testumgebungstyp not in [
+                                other for other in self.other_test_environment
+                            ]:
+                                self.other_test_environment.append(security_order.testumgebungstyp)
+                        #------------------------------------------------------
 #                   Next varErfassteTDAAItem
 #               
 #                   'Auswertung des Abgleichs der relevanten Testumgebungen
+                    #Evaluation of the comparison of relevant test environments
 #                   Call AuswertungTUAbgleich(intAbgleichTUs, strAbgleichTUs, intAuswertungTUs, strAuswertungTUs)
+                    te_evaluations = TestEnvironmentEvaluations(self.te_comparison_count)
+                    te_evaluations.summarize()
 #                   
 #                   'Erzeugung der Ausgabe für TU-Vergleich
 #                   Call AusgabeTUAbgleich(intAuswertungTUs, strAuswertungTUs, strAuswertungTUsFehlendeAAs, strAuswertungTUsFehlendeTFs, intAusgabeAuswertungTUs, strAusgabeAuswertungTUs, strAusgabeAuswertungTUsDetails)
+                    te_evaluations.output_comparison()
+                    te_evaluation_output = te_evaluations.str_output
+                    te_evaluation_output_details = te_evaluation_output_details
+                    te_missing_test_cases = te_evaluations.missing_test_cases
+                    te_missing_security_orders = te_evaluations.missing_security_orders
 #               Else
+                else:
 #                   'Keine Absicherungsaufträge vorhanden
 #                   strAusgabeAuswertungTUs = "Kein Absicherungsauftrag vorhanden"
+                    te_evaluation_output
 #                   intAusgabeAuswertungTUs = 3
+                    te_evaluation_int_output = 3
 #               End If
 #           Else
 #               'Kein Verifikationskriterium vorhanden
 #               strAusgabeAuswertungTUs = "Kein Verifikationskriterium vorhanden"
+                te_evaluation_output = 'Kein Verifikationskriterium vorhanden'
 #               intAusgabeAuswertungTUs = 3
+                te_evaluation_int_ouput = 3
 #           End If
 #           
 #           'Ausgabe Testfälle
 #           rngBsMAttribute(18).Offset(lngDatensatz, 0).Value = strTestfaelle
+            bsm_output_data['Testfälle'].append(test_case)
 #           'Ausgabe TD-AA
 #           rngBsMAttribute(16).Offset(lngDatensatz, 0).Value = strTDAA
+            bsm_output_data['TD-AA'].append(strTDAA)
 #           'Ausgabe TD-TI:TU
 #           rngBsMAttribute(17).Offset(lngDatensatz, 0).Value = strTDTiTu
+            bsm_output_data['TD-TI:TU'].append(strTDTiTu)
 #           'Alle Umsetzer in den Testinstanzen abgedeckt?
 #           blnTIUnerlaubt = False
+            blnTIUnerlaubt = any(not implementer for implementer in bln_umsetzer)
 #           For intUmsetzer = LBound(varUmsetzer, 1) To UBound(varUmsetzer, 1)
 #               If blnUmsetzer(intUmsetzer) = False Then
 #                   blnTIUnerlaubt = True
 #               End If
 #           Next intUmsetzer
 #           If blnTIUnerlaubt Then
+            ###if blnTIUnerlaubt:
+                ###TODO conditional cell background color format
 #               rngBsMAttribute(17).Offset(lngDatensatz, 0).Interior.Color = RGB(255, 255, 102)
 #           End If
 #           'Ausgabe Vergleich TUs
 #           With rngBsMAttribute(19).Offset(lngDatensatz, 0)
 #               .Value = strAusgabeAuswertungTUs
+            bsm_output_data['Vergleich TUs'].append(te_evaluation_output)
+            ###TODO: conditional background color format-----
 #               If intAusgabeAuswertungTUs = 1 Then
+            ###if te_evaluation_int_ouput ==1:
 #                   'Grün
 #                   .Interior.Color = RGB(51, 204, 51)
 #               ElseIf intAusgabeAuswertungTUs = 2 Then
+            ###elif te_evaluation_int_ouput == 2:
 #                   'Gelb
 #                   .Interior.Color = RGB(255, 255, 102)
 #               ElseIf intAusgabeAuswertungTUs = 3 Then
+            ###elif te_evaluation_int_output == 3:
 #                   'Rot
 #                   .Interior.Color = RGB(255, 51, 0)
 #               End If
+            ###-------------------------------------------------
 #           End With
 #           With rngBsMAttribute(28).Offset(lngDatensatz, 0)
 #               .Value = strAusgabeAuswertungTUsDetails
+            bsm_output_data['Erläuterungen zum Vergleich'].append(te_evaluation_output_details)
+            ###TODO: conditional background color format--------
 #               If intAusgabeAuswertungTUs = 1 Then
+            ###if te_evaluation_int_ouput ==1:
 #                   'Grün
 #                   .Interior.Color = RGB(51, 204, 51)
 #               ElseIf intAusgabeAuswertungTUs = 2 Then
+            ###elif te_evaluation_int_ouput == 2:
 #                   'Gelb
 #                   .Interior.Color = RGB(255, 255, 102)
 #               ElseIf intAusgabeAuswertungTUs = 3 Then
+            ###elif te_evaluation_int_output == 3:
 #                   'Rot
 #                   .Interior.Color = RGB(255, 51, 0)
 #               End If
+            ###-------------------------------------------------
 #           End With
 #           'Ausgabe Erläuterungen zum Vergleich
 #           'Ausgabe fehlende TUs bei TD-AAs
 #           rngBsMAttribute(26).Offset(lngDatensatz, 0).Value = strAuswertungTUsFehlendeAAs
+            bsm_output_data['Fehlende TUs bei TD-AAs'].append(
+                te_evaluation_missing_security_orders
+            )
 #           'Ausgabe fehlende TUs bei TFs
 #           rngBsMAttribute(27).Offset(lngDatensatz, 0).Value = strAuswertungTUsFehlendeTFs
+            bsm_output_data['Fehlende TUs bei TF'].append(
+                te_evaluation_missing_test_cases
+            )
 #           
 #           'Projektspezifische Ausgabe - MEB21
 #           If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
+            if self.project in ['MEB21', 'MQB48W']:
 #               rngBsMAttribute(35).Offset(lngDatensatz, 0).Value = varErfassteBsMDatensatzItem.AVWTemp11_Auswahlfeld
+                bsm_output_data['Temp11_Auswahlfeld'].append(bsm_dataset.avw_temp11_auswahlfeld)
 #           End If
 #           
 #       Next varErfassteBsMDatensatzItem
 #       
 #       'Weitere TUs zusammenfassen
 #       If intWeitereTUs > 0 Then
+        if len(self.other_test_environment_output) > 0:
+            self.other_test_environment_output = '\n'.join(self.other_test_environment)
 #           For i = LBound(strWeitereTUs, 1) To UBound(strWeitereTUs, 1)
+            #for other_te_i in range(other_test_environment_top):
 #               If strWeitereTUsAusgabe = "" Then
+                #if self.other_test_environment_output == '':
 #                   strWeitereTUsAusgabe = strWeitereTUs(i)
+                    #self.other_test_environment_output = strWeitereTUs[other_te_i]
 #               Else
+                #else:
 #                   strWeitereTUsAusgabe = strWeitereTUsAusgabe & vbCrLf & strWeitereTUs(i)
+                #self.other_test_environment_output += '\n' + strWeitereTUs[other_te_i]
 #               End If
 #           Next i
 #       End If
 #       
 #       'Spaltenbreite anpassen
+        ###TODO cells with formating
 #       With wksBsM.Cells
 #           .Columns.AutoFit
 #           .Rows.AutoFit
 #       End With
 #       
 #       'Projektspezifische Sortierung - MEB21
+        ###TODO modify columns location
 #       If strProjekt = "MEB21" Then
 #           wksBsM.Columns(35).Cut
 #           wksBsM.Columns(18).Insert shift:=xlToRight
 #       End If
 #       
+        ###TODO activate Filtering
 #       'Filterung aktivieren
 #       wksBsM.Rows(1).AutoFilter
 #       
 #       'Dateinamen ausgeben und verstecken
+        ###TODO
 #       lngDatensatz = 1
 #       wksBsM.Rows(lngDatensatz).EntireRow.Insert shift:=xlDown
 #       wksBsM.Cells(lngDatensatz, 1) = "Anforderungen: " & strDateinamen(1) & vbCrLf & "Verifikationskriterien: " & strDateinamen(2) & vbCrLf & _
@@ -2298,176 +2469,15 @@ class ATEStatus:
 #                                       "FRU-Timing: " & strDateinamen(5)
 #       wksTD.Rows(lngDatensatz).EntireRow.Hidden = True
 #       End Sub
-#       
+#
+        ###Moved to test_environment_evaluation ---------------------------------       
 #       Private Sub AuswertungTUAbgleich(ByRef intAbgleichTUs() As Integer, ByRef strAbgleichTUs() As String, ByRef intAuswertungTUs() As Integer, ByRef strAuswertungTUs() As String)
-#       Dim i As Integer        'Laufvariable
-#       
-#       For i = LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1)
-#           If intAbgleichTUs(i) = 1 Then
-#               '#TF nicht vorhanden, VK fachlich abgestimmt
-#               intAuswertungTUs(1) = intAuswertungTUs(1) + 1
-#               If strAuswertungTUs(1) = "" Then
-#                   strAuswertungTUs(1) = strAbgleichTUs(i)
-#               Else
-#                   strAuswertungTUs(1) = strAuswertungTUs(1) & ", " & strAbgleichTUs(i)
-#               End If
-#               
-#           ElseIf intAbgleichTUs(i) = 10 Then
-#               '#TF operativ, VK nicht vorhanden
-#               intAuswertungTUs(10) = intAuswertungTUs(10) + 1
-#               If strAuswertungTUs(10) = "" Then
-#                   strAuswertungTUs(10) = strAbgleichTUs(i)
-#               Else
-#                   strAuswertungTUs(10) = strAuswertungTUs(10) & ", " & strAbgleichTUs(i)
-#               End If
-#           ElseIf intAbgleichTUs(i) = 11 Then
-#               '#TF operativ, VK fachlich abgestimmt
-#               intAuswertungTUs(11) = intAuswertungTUs(11) + 1
-#               If strAuswertungTUs(11) = "" Then
-#                   strAuswertungTUs(11) = strAbgleichTUs(i)
-#               Else
-#                   strAuswertungTUs(11) = strAuswertungTUs(11) & ", " & strAbgleichTUs(i)
-#               End If
-#       
-#           ElseIf intAbgleichTUs(i) = 20 Then
-#               '#TF nicht operativ, VK nicht vorhanden
-#               intAuswertungTUs(20) = intAuswertungTUs(20) + 1
-#               If strAuswertungTUs(20) = "" Then
-#                   strAuswertungTUs(20) = strAbgleichTUs(i)
-#               Else
-#                   strAuswertungTUs(20) = strAuswertungTUs(20) & ", " & strAbgleichTUs(i)
-#               End If
-#           ElseIf intAbgleichTUs(i) = 21 Then
-#               '#TF nicht operativ, VK fachlich abgestimmt
-#               intAuswertungTUs(21) = intAuswertungTUs(21) + 1
-#               If strAuswertungTUs(21) = "" Then
-#                   strAuswertungTUs(21) = strAbgleichTUs(i)
-#               Else
-#                   strAuswertungTUs(21) = strAuswertungTUs(21) & ", " & strAbgleichTUs(i)
-#               End If
-#               
-#           ElseIf intAbgleichTUs(i) = 30 Then
-#               '#TF teilweise operativ und nicht operativ, VK nicht vorhanden
-#               intAuswertungTUs(30) = intAuswertungTUs(30) + 1
-#               If strAuswertungTUs(30) = "" Then
-#                   strAuswertungTUs(30) = strAbgleichTUs(i)
-#               Else
-#                   strAuswertungTUs(30) = strAuswertungTUs(30) & ", " & strAbgleichTUs(i)
-#               End If
-#           ElseIf intAbgleichTUs(i) = 31 Then
-#               '#TF teilweise operativ und nicht operativ, VK fachlich abgestimmt
-#               intAuswertungTUs(31) = intAuswertungTUs(31) + 1
-#               If strAuswertungTUs(31) = "" Then
-#                   strAuswertungTUs(31) = strAbgleichTUs(i)
-#               Else
-#                   strAuswertungTUs(31) = strAuswertungTUs(31) & ", " & strAbgleichTUs(i)
-#               End If
-#           End If
-#       Next i
-#   End Sub
-#   
-#   Private Sub AusgabeTUAbgleich(ByRef intAuswertungTUs() As Integer, ByRef strAuswertungTUs() As String, _
+#       Private Sub AusgabeTUAbgleich(ByRef intAuswertungTUs() As Integer, ByRef strAuswertungTUs() As String, _
 #                                            ByRef strAuswertungTUsFehlendeAAs As String, ByRef strAuswertungTUsFehlendeTFs As String, _
 #                                            ByRef intAusgabeAuswertungTUs As Integer, ByRef strAusgabeAuswertungTUs As String, ByRef strAusgabeAuswertungTUsDetails As String)
-    def output_comparation_TU(self):
-        pass #TODO
-#       '1) alle TF operativ und VK:TU = TF:TU
-#       '2) TF vorhanden, aber Status != operativ oder VK:TU != TF:TU
-#       '3) keine TF vorhanden
-#       
-#       'VKs sind obligatorisch
-#       If intAuswertungTUs(1) = 0 Then
-#           'Keine relevanten VK-TUs ohne TF vorhanden
-#           If intAuswertungTUs(11) > 0 Then
-#               'Alle relevanten VK-TUs mit TF (operativ) abgedeckt
-#               strAusgabeAuswertungTUs = "Alle relevanten Testumgebungstypen abgedeckt"
-#               'strAusgabeAuswertungTUsDetails = "Alle relevanten Testumgebungstypen mit operativen Testfällen abgedeckt"
-#               strAusgabeAuswertungTUsDetails = "Testfälle vollständig"
-#               intAusgabeAuswertungTUs = 1
-#           End If
-#           If intAuswertungTUs(21) > 0 Then
-#               'Alle relevanten VK-TUs mit TF (nicht operativ) abgedeckt
-#               strAusgabeAuswertungTUs = "Alle relevanten Testumgebungstypen abgedeckt"
-#               'strAusgabeAuswertungTUsDetails = "Alle relevanten Testumgebungstypen mit nicht operativen Testfällen abgedeckt"
-#               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig"
-#               intAusgabeAuswertungTUs = 2
-#           End If
-#           If intAuswertungTUs(31) > 0 Then
-#               'Alle relevanten VK-TUs mit TF (teilweise operativ) abgedeckt
-#               strAusgabeAuswertungTUs = "Alle relevanten Testumgebungstypen abgedeckt"
-#               'strAusgabeAuswertungTUsDetails = "Alle relevanten Testumgebungstypen mit operativen und nicht operativen Testfällen abgedeckt"
-#               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig"
-#               intAusgabeAuswertungTUs = 2
-#           End If
-#           If intAuswertungTUs(11) = 0 And intAuswertungTUs(21) = 0 And intAuswertungTUs(31) = 0 Then
-#               'Keine relevanten VK-TUs vorhanden
-#               strAusgabeAuswertungTUs = "Keine relevanten Testumgebungstypen vorhanden"
-#               intAusgabeAuswertungTUs = 1
-#           End If
-#           'Feldfarbe grün
-#       ElseIf intAuswertungTUs(1) > 0 Then
-#           'Relevante VK-TUs ohne TF vorhanden
-#           If intAuswertungTUs(11) > 0 Then
-#               'Einige relevanten VK-TUs mit TF (operativ) abgedeckt
-#               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen teilweise abgedeckt"
-#               'strAusgabeAuswertungTUsDetails = "Relevante Testumgebungstypen teilweise mit operativen Testfällen abgedeckt"
-#               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig"
-#               'Feldfarbe gelb
-#               intAusgabeAuswertungTUs = 2
-#           End If
-#           If intAuswertungTUs(21) > 0 Then
-#               'Einige relevanten VK-TUs mit TF (nicht operativ) abgedeckt
-#               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen teilweise abgedeckt"
-#               'strAusgabeAuswertungTUsDetails = "Relevante Testumgebungstypen teilweise mit nicht operativen Testfällen abgedeckt"
-#               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig"
-#               'Feldfarbe gelb
-#               intAusgabeAuswertungTUs = 2
-#           End If
-#           If intAuswertungTUs(31) > 0 Then
-#               'Einige relevanten VK-TUs mit TF (teilweise operativ) abgedeckt
-#               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen teilweise abgedeckt"
-#               'strAusgabeAuswertungTUsDetails = "Relevante Testumgebungstypen teilweise mit operativen und nicht operativen Testfällen abgedeckt"
-#               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig"
-#               'Feldfarbe gelb
-#               intAusgabeAuswertungTUs = 2
-#           End If
-#           If intAuswertungTUs(11) = 0 And intAuswertungTUs(21) = 0 And intAuswertungTUs(31) = 0 Then
-#               'Keine relevanten VK-TUs abgedeckt
-#               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen nicht abgedeckt"
-#               strAusgabeAuswertungTUsDetails = "Keine Testfälle vorhanden"
-#               'Feldfarbe rot
-#               intAusgabeAuswertungTUs = 3
-#           End If
-#           'Fehlende TUs bei TFs erfassen
-#           strAuswertungTUsFehlendeTFs = strAuswertungTUs(1)
-#       End If
-#       
-#       'Weitere relevante TUs in TFs vorhanden?
-#       If intAuswertungTUs(10) > 0 Then
-#           'TF operativ
-#           'strAusgabeAuswertungTUsDetails = strAusgabeAuswertungTUsDetails & vbCrLf & "Weitere operative Testfälle für abweichende Testumgebungstypen vorhanden."
-#           strAuswertungTUsFehlendeAAs = strAuswertungTUs(10)
-#       End If
-#       If intAuswertungTUs(20) > 0 Then
-#           'TF nicht operativ
-#           'strAusgabeAuswertungTUsDetails = strAusgabeAuswertungTUsDetails & vbCrLf & "Weitere nicht operative Testfälle für abweichende Testumgebungstypen vorhanden."
-#           If strAuswertungTUsFehlendeAAs = "" Then
-#               strAuswertungTUsFehlendeAAs = strAuswertungTUs(20)
-#           Else
-#               strAuswertungTUsFehlendeAAs = strAuswertungTUsFehlendeAAs & ", " & strAuswertungTUs(20)
-#           End If
-#       End If
-#       If intAuswertungTUs(30) > 0 Then
-#           'TF operativ und nicht operativ
-#           'strAusgabeAuswertungTUsDetails = strAusgabeAuswertungTUsDetails & vbCrLf & "Weitere operative und nicht operative Testfälle für abweichende Testumgebungstypen vorhanden."
-#           If strAuswertungTUsFehlendeAAs = "" Then
-#               strAuswertungTUsFehlendeAAs = strAuswertungTUs(30)
-#           Else
-#               strAuswertungTUsFehlendeAAs = strAuswertungTUsFehlendeAAs & ", " & strAuswertungTUs(30)
-#           End If
-#           strAuswertungTUsFehlendeAAs = strAuswertungTUs(30)
-#       End If
-#   End Sub
+        ###----------------------------------------------------------------------
+#   
+
 #   
 #   Private Function AuswertungUnterschiedlicheIStufen(ByRef IStufen As Collection) As Boolean
     def AuswertungUnterschiedlicheIStufen(self, i_stufen:list|tuple) -> bool:
@@ -2489,7 +2499,7 @@ class ATEStatus:
 #   End Function
 #   
 #   Private Sub AusgabeVerlauf(ByRef wksStatus As Worksheet, ByRef strFehlerVerlauf As String, ByVal intAuswahl As Integer)
-    def ausgabe_verlauf(self):
+    def output_history(self):
         # loop will be use to implement next two calls from the old code
         #               Call AusgabeVerlauf(wksBsM, strFehlerATEVerlauf, 1)
         #               Call AusgabeVerlauf(wksTD, strFehlerTDVerlauf, 2)

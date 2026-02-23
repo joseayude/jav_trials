@@ -21,6 +21,16 @@ class DBInfo:
         self.columns:pd.DataFrame|None = None
         self.error_msg:str = ""
 
+    def new_output(self, attributes:tuple[str], sheet_name:str)-> 'DBInfo':
+        output = DBInfo(
+            attributes=attributes,
+            columns= pd.DataFrame({name : [] for name in attributes})
+        )
+        output.workbook = self.workbook
+        output.sheet_name = sheet_name
+        output.path = self.path
+        return output
+
     def str_attributes(self, separator:str=", "):
         return separator.join(self.attributes)
 

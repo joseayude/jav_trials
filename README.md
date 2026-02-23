@@ -33,12 +33,12 @@ High-level overview of the project layout with key files and directories.
 │        ├─ aux.py              # Aux helpers used in tests and modules
 │        └─ color.py            # Terminal color helpers
 └─ test/                        # Unit tests and fixtures
-	├─ test_config.py
-	├─ test_ole.py
-	├─ test_workbook.py
-	└─ test_ate/
-		└─ test_om/
-			└─ test_db_info.py
+    ├─ test_config.py
+    ├─ test_ole.py
+    ├─ test_workbook.py
+    └─ test_ate/
+        └─ test_om/
+            └─ test_db_info.py
 ```
 
 - `LICENSE`, `pyproject.toml`, `README.md`: project metadata and dependency configuration.
