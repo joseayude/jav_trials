@@ -39,7 +39,7 @@ def test_all_sheets():
                 assert col in expected[name]
 
 
-def test_add_worksheet(tmp_path):
+def test_append_sheet(tmp_path):
     """Copy example01.xlsx to a temp location, append a sheet using pandas, and verify it appears."""
     src: Path = working_path / "test/data/example01.xlsx"
     dest: Path = tmp_path / "example01.xlsx"
@@ -47,8 +47,10 @@ def test_add_worksheet(tmp_path):
 
     # create a simple DataFrame and append as a new sheet
     df = pd.DataFrame({"col1": [1, 2], "col2": ["a", "b"]})
-    with pd.ExcelWriter(dest, engine="openpyxl", mode="a") as writer:
-        df.to_excel(writer, sheet_name="NewSheet", index=False)
+    #with pd.ExcelWriter(dest, engine="openpyxl", mode="a") as writer:
+    #    df.to_excel(writer, sheet_name="NewSheet", index=False)
+    workbook = Workbook(file_path = dest)
+    workbook.append_worksheet(df, "NewSheet")
 
     # verify via Workbook wrapper
     w: Workbook = Workbook(dest)

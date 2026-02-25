@@ -65,3 +65,26 @@ class Workbook:
             df:pd.DataFrame = pd.read_excel(self.file_path, sheet_name=name)
             yield name, df
     
+    def append_worksheet(self, data_frame:pd.DataFrame, name:str):
+        try:
+            if os.path.exists(self.file_path):
+                # Append to existing workbook
+                with pd.ExcelWriter(
+                    self.file_path,
+                    mode='a',
+                    engine='openpyxl',
+                    if_sheet_exists='replace'
+                ) as writer:
+                    data_frame.to_excel(writer, sheet_name=name, index=False)
+            else:
+                if not os.path.exists(self.file_path.parent):
+                    os.makedirs(self.file_path.parent, exist_ok=True)
+                # Create new workbook
+                data_frame.to_excel(self.file_path, sheet_name=name, index=False)
+
+            print(f"DataFrame saved to '{name}' in {self.file_path}")
+
+        except PermissionError:
+            print("Error: The file is open in another program. Please close it and try again.")
+        except Exception as e:
+            print(f"An error occurred: {e}")  
