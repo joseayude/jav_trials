@@ -4,6 +4,10 @@ import pandas as pd
 from xls_management.ate.om.fru_timming import FRUTiming
 from xls_management.ate.om.test_case import TestCase
 from xls_management.ate.om.verificationskriterium import Verificationskriterium
+from xls_management.ate.data_de import (
+    RequirementAttribute,
+    AVWProjectAttribute,
+)
 
 #class BSMDaten (DE)
 class BSMData:
@@ -27,72 +31,77 @@ class BSMData:
         self.test_cases: list[TestCase] = []
 #       'Feature einlesen
 #       BSMDatensatz.AVWFeature = CStr(rngAVWAttribute(7).Offset(lngZeile, 0).Value)
-        self.avw_feature = str(columns['Feature'][row])
+        self.avw_feature = str(columns[RequirementAttribute.Feature][row])
 #       'Reifegrad einlesen
 #       BSMDatensatz.AVWReifegrad = CStr(rngAVWAttribute(8).Offset(lngZeile, 0).Value)
-        self.avw_reifegrad = str(columns['Reifegrad'][row])
+        self.avw_reifegrad = str(columns[RequirementAttribute.MaturityLevel][row])
 #       'Umsetzer einlesen
 #       BSMDatensatz.AVWUmsetzer = CStr(rngAVWAttribute(9).Offset(lngZeile, 0).Value)
-        self.avw_converter = str(columns['Umsetzer'][row])
+        self.avw_implementer = str(columns[RequirementAttribute.Implementer][row])
 #       'Dokument-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #       BSMDatensatz.AVWDokumentID = Replace(Replace(CStr(rngAVWAttribute(2).Offset(lngZeile, 0).Value), "?", ""), "r", "")
-        self.avw_dokument_id = re.sub('[\?r]','',str(columns['DokumentID'][row]))
+        self.avw_dokument_id = re.sub('[\?r]','',str(columns[RequirementAttribute.DocumentID][row]))
 #       'Dokument-Name einlesen
 #       BSMDatensatz.AVWDokumentName = CStr(rngAVWAttribute(19).Offset(lngZeile, 0).Value)
-        self.avw_dokument_name = str(columns['Dokument'][row])
+        self.avw_dokument_name = str(columns[RequirementAttribute.Document][row])
 #       'Modulverantwortlichen einlesen
 #       BSMDatensatz.AVWMV = CStr(rngAVWAttribute(17).Offset(lngZeile, 0).Value)
-        self.avw_mv = str(columns['MV'][row])
+        self.avw_mv = str(columns[RequirementAttribute.MV][row])
 #       'Anforderungs-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #       BSMDatensatz.AVWID = Replace(Replace(CStr(rngAVWAttribute(1).Offset(lngZeile, 0).Value), "?", ""), "r", "")
-        self.avw_id = re.sub('[\?r]','',str(columns['ID'][row]))
+        self.avw_id = re.sub('[\?r]','',str(columns[RequirementAttribute.ID][row]))
 #       'Status einlesen
 #       BSMDatensatz.AVWStatus = CStr(rngAVWAttribute(6).Offset(lngZeile, 0).Value)
-        self.avw_status = str(columns['Status'][row])
+        self.avw_status = str(columns[RequirementAttribute.Status][row])
 #       'Typ einlesen
 #       BSMDatensatz.AVWTyp = CStr(rngAVWAttribute(4).Offset(lngZeile, 0).Value)
-        self.avw_typ = str(columns['Typ'][row])
+        self.avw_typ = str(columns[RequirementAttribute.Type][row])
 #       'Kategorie einlesen
 #       BSMDatensatz.AVWKategorie = CStr(rngAVWAttribute(5).Offset(lngZeile, 0).Value)
-        self.avw_kategorie = str(columns['Kategorie'][row])
+        self.avw_kategorie = str(columns[RequirementAttribute.Category][row])
 #       'BsM-Status einlesen
 #       BSMDatensatz.AVWBsMSaFuSi = CStr(rngAVWAttribute(11).Offset(lngZeile, 0).Value)
-        self.avw_bsm_safusi = str(columns['BSM-SaFuSi Bewertung'][row])
+        self.avw_bsm_safusi = str(columns[RequirementAttribute.BSMSaFuSiAssesment][row])
 #       BSMDatensatz.AVWBsMZZ = CStr(rngAVWAttribute(12).Offset(lngZeile, 0).Value)
-        self.avw_bsm_zz = str(columns['BSM-ZZ Bewertung'][row])
+        self.avw_bsm_zz = str(columns[RequirementAttribute.BSMZZAssesment][row])
 #       BSMDatensatz.AVWBsMED = CStr(rngAVWAttribute(13).Offset(lngZeile, 0).Value)
-        self.avw_bsm_ed = str(columns['BSM-ED Bewertung'][row])
+        self.avw_bsm_ed = str(columns[RequirementAttribute.BSMEDAssesment][row])
 #       BSMDatensatz.AVWBsMFFF = CStr(rngAVWAttribute(14).Offset(lngZeile, 0).Value)
-        self.avw_bsm_fff = str(columns['BSM-FFF Bewertung'][row])
+        self.avw_bsm_fff = str(columns[RequirementAttribute.BSMFFFAssesment][row])
 #       BSMDatensatz.AVWBsMO = CStr(rngAVWAttribute(15).Offset(lngZeile, 0).Value)
-        self.avw_bsm_o = str(columns['BSM-O Bewertung'][row])   
+        self.avw_bsm_o = str(columns[RequirementAttribute.BSMOAssesment][row])   
 #       BSMDatensatz.AVWBsMSe = CStr(rngAVWAttribute(16).Offset(lngZeile, 0).Value)
-        self.avw_bsm_se = str(columns['BSM-Se Bewertung'][row])
+        self.avw_bsm_se = str(columns[RequirementAttribute.BSMSeAssesment][row])
         self.set_relevance()
         ### refactored as BSMData.set_relevance()
 #       'ASIL einlesen
 #       BSMDatensatz.AVWASIL = CStr(rngAVWAttribute(10).Offset(lngZeile, 0).Value)
-        self.avw_asil = str(columns['ASIL'][row])
+        self.avw_asil = str(columns[RequirementAttribute.ASIL][row])
 #       'Kommentar Redaktionskreis und temp1_Text einlesen
 #       If InStr(CStr(UCase(rngAVWAttribute(20).Offset(lngZeile, 0).Value)), "#ABGELEHNT_NICHT_TESTBAR") > 0 Or InStr(CStr(UCase(rngAVWAttribute(21).Offset(lngZeile, 0).Value)), "#ABGELEHNT_NICHT_TESTBAR") > 0 Then
-        if re.search('#abgelehnt_nicht_testbar', str(columns['Kommentar Redaktionskreis'][row]), re.IGNORECASE) or re.search('#abgelehnt_nicht_testbar', str(columns['Temp1_Text'][row]), re.IGNORECASE):
+        if (
+            re.search('#abgelehnt_nicht_testbar', str(columns[RequirementAttribute.EditorialTeamComent][row]), re.IGNORECASE) or 
+            re.search('#abgelehnt_nicht_testbar', str(columns[RequirementAttribute.Temp1_Text][row]), re.IGNORECASE)
+        ):
 #           BSMDatensatz.AVWAbgelehntNichtTestbar = "x"
             self.avw_abgelehnt_nicht_testbar = 'x'
+        else:
+            self.avw_abgelehnt_nicht_testbar = ''
 #       End If
         self.set_i_stufe()
 #       'Cluster Testing einlesen
 #       BSMDatensatz.ClusterTesting = CStr(rngAVWAttribute(18).Offset(lngZeile, 0).Value)
-        self.cluster_testing = str(columns['Cluster Testing'][row])
+        self.cluster_testing = str(columns[RequirementAttribute.TestingCluster][row])
 #       
 #       'Anforderungsverantwortliche einlesen
 #       BSMDatensatz.AVWAnforderungsverantwortliche = CStr(rngAVWAttribute(22).Offset(lngZeile, 0).Value)
-        self.avw_anforderungsverantwortliche = str(columns['Anforderungsverantwortliche'][row])
+        self.avw_anforderungsverantwortliche = str(columns[RequirementAttribute.RequirementOwners][row])
 #       
 #       'Projekt MEB21 - Temp11_Auswahlfeld einlesen
 #       If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
         if is_specific:
 #           BSMDatensatz.AVWTemp11_Auswahlfeld = CStr(rngAVWAttributeMEB21(1).Offset(lngZeile, 0).Value)
-            self.avw_temp11_auswahlfeld = str(columns['Temp11_Auswahlfeld'][row])
+            self.avw_temp11_auswahlfeld = str(columns[AVWProjectAttribute.Temp11SelectionField][row])
 #       End If
     
     def set_relevance(self):
@@ -141,9 +150,9 @@ class BSMData:
         min_i_stufe = ''
         if len(self.fru_timing_index) > 0:
 #           If BSMDatensatz.AVWUmsetzer <> "" Then
-            if self.avw_converter != '':
+            if self.avw_implementer != '':
 #               varUmsetzer = Split(BSMDatensatz.AVWUmsetzer, ",", , vbBinaryCompare)
-                converter_list = [converter.strip() for converter in self.avw_converter.split(',')]     
+                converter_list = [converter.strip() for converter in self.avw_implementer.split(',')]     
 #               For intUmsetzer = 0 To UBound(varUmsetzer, 1)
                 for converter in converter_list:
 #                   strIStufe = FRUTimingList.Item(BSMDatensatz.AVWFeature & BSMDatensatz.AVWReifegrad & Trim(varUmsetzer(intUmsetzer))).IStufe
@@ -180,9 +189,9 @@ class BSMData:
 #       End If
 #       'Umsetzer für Verifikationskritierum erfassen
 #       If BSMDatensatz.AVWUmsetzer <> "" Then
-        if self.avw_converter != '' and self.avw_converter not in verification_criterion.anf_umsetzer:
+        if self.avw_implementer != '' and self.avw_implementer not in verification_criterion.anf_umsetzer:
 #           varErfassteVKItem.anf_Umsetzer.Add Item:=BSMDatensatz.AVWUmsetzer
-            verification_criterion.anf_umsetzer.append(self.avw_converter)
+            verification_criterion.anf_umsetzer.append(self.avw_implementer)
 #       End If
 #       'BsM-Relevanz für Verifikationskritierum erfassen
 #       If BSMDatensatz.BSMRelevanz <> "" Then

@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from xls_management.ate.om.test_case import TestCase
 from xls_management.utils.aux import list_from_comma_separated_str
 from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
+from xls_management.ate.data_de import TDVCAttribute as VC # Verification Criterion
 
 
 class Verificationskriterium:
@@ -37,10 +38,10 @@ class Verificationskriterium:
 #               strVerifikationsID = Replace(Replace(rngTDVKAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
 #               'ID des Verifikationsauftrags erfassen
 #               verifikationKrit.VK_ID = strVerifikationsID
-                self.vk_id = str(columns['ID'][row]).replace('?', '').replace('r', '')
+                self.vk_id = str(columns[VC.ID][row]).replace('?', '').replace('r', '')
 #               'Anforderungs-IDs einlesen
 #               anfIDs = rngTDVKAttribute(2).Offset(lngZeile, 0).Value
-                anf_ids_str = str(columns['Basierend auf der Anforderung'][row])
+                anf_ids_str = str(columns[VC.RequirementBased][row])
 #               'Anforderungs-IDs nach Kommas trennen
 #               Set idList = EinlesenGetrennteWerteKomma(anfIDs)
 #               'Alle mit dem aktuellen Verifikationskriterium verknüpften Anforderungs-IDs erfassen
@@ -48,7 +49,7 @@ class Verificationskriterium:
                 self.anf_ids = list_from_comma_separated_str(anf_ids_str)
 #               'Status des Verifikationskriteriums einlesen
 #               verifikationKrit.VK_status = rngTDVKAttribute(3).Offset(lngZeile, 0).Value
-                self.status = columns['Status'][row]
+                self.status = columns[VC.Status][row]
 #               'Absicherungsaufträge für dieses Verifikationskriterium anlegen
 #               Set verifikationKrit.Absicherungsauftraege = New Collection
                 self.absicherungsauftraege:dict[str,Absicherungsauftrag] = {}
@@ -92,10 +93,10 @@ class Verificationskriterium:
 #               Set verifikationKrit.anf_Temp11_Auswahlfeld = New Collection
                 self.anf_temp11_auswahlfeld = []
 #               verifikationKrit.VK_temp1Text = rngTDVKAttribute(4).Offset(lngZeile, 0).Value
-                self.temp1_text = columns['Temp1_Text'][row]
+                self.temp1_text = columns[VC.Temp1Text][row]
 #               'Aktion einlesen
 #               verifikationKrit.VK_Aktion = rngTDVKAttribute(5).Offset(lngZeile, 0).Value
-                self.aktion = columns['Aktion'][row]
+                self.aktion = columns[VC.Action][row]
 #
 #   Sub addElementID(ByVal elemID2 As String)
     def add_element_id(self, anf_id:str):

@@ -1,6 +1,4 @@
 from xls_management.ate.data_de import (
-    AVW_ATTRIBUTE,
-    OUTPUT_BSM_ATTRIBUTE,
     KNOWN_TEST_ENVIRONMENTS,
     RELEVANT_TEST_ENVIRONMENT_TOP as RELEVANT_TOP,
 )

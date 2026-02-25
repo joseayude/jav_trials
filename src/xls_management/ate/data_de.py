@@ -1,93 +1,99 @@
 
-AVW_ATTRIBUTE: tuple[str] = (
-    "ID",
+from enum import StrEnum
+
+
+class RequirementAttribute(StrEnum):
+    ID = "ID",
 #       strAVWAttribute(1) = "ID"
-    "Dokument-ID",
+    DocumentID = "Dokument-ID",
 #       strAVWAttribute(2) = "Dokument-ID"
-    "Basis für Testdesign",
+    TestDesignBase="Basis für Testdesign",
 #       strAVWAttribute(3) = "Basis für Testdesign"
-    "Typ",
+    Type = "Typ",
 #       strAVWAttribute(4) = "Typ"
-    "Kategorie",
+    Category = "Kategorie",
 #       strAVWAttribute(5) = "Kategorie"
-    "Status",
+    Status = "Status",
 #       strAVWAttribute(6) = "Status"
-    "Feature",
+    Feature ="Feature",
 #       strAVWAttribute(7) = "Feature"
-    "Reifegrad",
+    MaturityLevel ="Reifegrad",
 #       strAVWAttribute(8) = "Reifegrad"
-    "Umsetzer",
+    Implementer = "Umsetzer",
 #       strAVWAttribute(9) = "Umsetzer"
-    "ASIL",
+    ASIL = "ASIL",
 #       strAVWAttribute(10) = "ASIL"
-    "BSM-SaFuSi Bewertung",
+    BSMSaFuSiAssesment ="BSM-SaFuSi Bewertung",
 #       strAVWAttribute(11) = "BSM-SaFuSi Bewertung"
-    "BSM-ZZ Bewertung",
+    BSMZZAssesment = "BSM-ZZ Bewertung",
 #       strAVWAttribute(12) = "BSM-ZZ Bewertung"
-    "BSM-ED Bewertung",
+    BSMEDAssesment = "BSM-ED Bewertung",
 #       strAVWAttribute(13) = "BSM-ED Bewertung"
-    "BSM-FFF Bewertung",
+    BSMFFFAssesment = "BSM-FFF Bewertung",
 #       strAVWAttribute(14) = "BSM-FFF Bewertung"
-    "BSM-O Bewertung",
+    BSMOAssesment ="BSM-O Bewertung",
 #       strAVWAttribute(15) = "BSM-O Bewertung"
-    "BSM-Se Bewertung",
+    BSMSeAssesment = "BSM-Se Bewertung",
 #       strAVWAttribute(16) = "BSM-Se Bewertung"
-    "MV",
+    MV = "MV",
 #       strAVWAttribute(17) = "MV"
-    "Cluster Testing",
+    TestingCluster = "Cluster Testing",
 #       strAVWAttribute(18) = "Cluster Testing"
-    "Dokument",
+    Document = "Dokument",
 #       strAVWAttribute(19) = "Dokument"
-    "Kommentar Redaktionskreis",
+    EditorialTeamComent = "Kommentar Redaktionskreis",
 #       strAVWAttribute(20) = "Kommentar Redaktionskreis"
-    "temp1_Text",
+####    Temp1_Text = "temp1_Text", ## Diff in file MEBwq_Statistik_Testing.xlsx
+    Temp1_Text = 'Temp1_text',
 #       strAVWAttribute(21) = "temp1_Text"
-    "Anforderungsverantwortliche",
+    RequirementOwners = "Anforderungsverantwortliche",
 #       strAVWAttribute(22) = "Anforderungsverantwortliche"
-    "Abgezweigt aus",
+    RedirectedFrom = "Abgezweigt aus",
 #       If blnAVWVorgaengerIDsVerwenden Then
 #           strAVWAttribute(23) = "Abgezweigt aus"  'strAVWAttribute(22) = "Abgezweigt aus"
 #       End If
-)
 
-OUTPUT_BSM_ATTRIBUTE: tuple[str] = (
-    'Abgezweigt aus',
-    'ID',
-    'Dokument-ID',
-    'BsM-Relevanz',
-    'BSM-SaFuSi Bewertung',
-    'BSM-ZZ Bewertung',
-    'BSM-ED Bewertung',
-    'BSM-FFF Bewertung',
-    'BSM-O Bewertung',
-    'BSM-Se Bewertung',
-    'ASIL',
-    'Feature',
-    'Reifegrad',
-    'Umsetzer',
-    'Status',
-    'TD-VK',
-    'TD-AA',
-    'TD-TI:TU',
-    'Testfälle',
-    'Vergleich TUs (TD-TF) - operativ',
-    'MV',
-    'Kategorie',
-    'Dokument',
-    '#abgelehnt_nicht_testbar',
-    'Zugeordnete I-Stufe',
-    'Status TD-VK',
-    'Fehlende TUs bei TD-AAs',
-    'Fehlende TUs bei TFs',
-    'Erläuterungen zum Vergleich',
-    'Cluster Testing',
-    'Projekt',
-    'TD-VK temp1_Text',
-    'TD-VK Effort Estimation',
-    'Anforderungsverantwortlicher',
-    'KW Datenauswertung',
-    'Temp11_Auswahlfeld',
-)
+class AVWProjectAttribute(StrEnum):
+    Temp11SelectionField ='Temp11_Auswahlfeld'
+
+class OutputBSMAttribute(StrEnum):
+    RedirectedFrom = 'Abgezweigt aus'
+    ID = 'ID'
+    DocumentID = 'Dokument-ID'
+    BSMRelevance = 'BsM-Relevanz'
+    BSMSaFuSiAssesment ='BSM-SaFuSi Bewertung'
+    BSMZZAssesment = 'BSM-ZZ Bewertung'
+    BSMEDAssesment = 'BSM-ED Bewertung'
+    BSMFFFAssesment = 'BSM-FFF Bewertung'
+    BSMOAssesment = 'BSM-O Bewertung'
+    BSMSeAssesment = 'BSM-Se Bewertung'
+    ASIL = 'ASIL'
+    Feature = 'Feature'
+    MaturityLevel = 'Reifegrad'
+    Implementer = 'Umsetzer'
+    Status = 'Status'
+    TDVC = 'TD-VK'
+    TDSafeguards = 'TD-AA'
+    TDTITE = 'TD-TI:TU'
+    TestCase = 'Testfälle'
+    OperationalComparisonTEsTDTC = 'Vergleich TUs (TD-TF) - operativ'
+    MV = 'MV'
+    Category = 'Kategorie'
+    Document = 'Dokument'
+    RejectedNotTestable = '#abgelehnt_nicht_testbar'
+    AssignedILevel = 'Zugeordnete I-Stufe'
+    StatusTDVC = 'Status TD-VK'
+    MissingTEInTDSafeguards = 'Fehlende TUs bei TD-AAs'
+    MissingTEInTCs = 'Fehlende TUs bei TFs'
+    ComparisonExplanations ='Erläuterungen zum Vergleich'
+    TestingCluster = 'Cluster Testing'
+    Project = 'Projekt'
+    TDVCTemp1Text ='TD-VK temp1_Text'
+    TDVCEffortEstimation ='TD-VK Effort Estimation'
+    RequirementOwner = 'Anforderungsverantwortlicher'
+    KWDataEvaluation = 'KW Datenauswertung'
+    Temp11SelectionField ='Temp11_Auswahlfeld'
+
         # From ouput_status() in tracking.py
 #       'Bekannte Testumgebungen
         #known test environments (EN)
@@ -130,65 +136,55 @@ KNOWN_TEST_ENVIRONMENTS: tuple[str] = (
     'BRS-Fahrversuch_Erprobung',
 )
 
-TDAA_ATTRIBUTE = (
+class TDSafeGuardsAttribute(StrEnum):
 #   strTDAAAttribute(1) = "ID"
-    "ID",
+    ID = "ID",
 #   strTDAAAttribute(2) = "Enthalten in"
-    "Enthalten in",
+    IncludedIn = "Enthalten in",
 #   strTDAAAttribute(3) = "Status"
-    "Status",
+    Status = "Status",
 #   strTDAAAttribute(4) = "Testinstanz"
-    "Testinstanz",
+    TestInstance = "Testinstanz",
 #   strTDAAAttribute(5) = "Testumgebungstyp"
-    "Testumgebungstyp" ,
-)
+    TestEnvironmentType = "Testumgebungstyp" 
 
-MASTER_ATTRIBUTE = (
+class RequirementMasterAttribute(StrEnum):
 #   strAVWMasterAttribute(1) = "ID"
-    "ID",
+    ID = "ID"
 #   strAVWMasterAttribute(2) = "temp1_Text"
-    "temp1_Text",
+    Temp1Text = "temp1_Text"
 #   strAVWMasterAttribute(3) = "Kommentar Redaktionskreis"
-    "Kommentar Redaktionskreis",
-)
+    EditorialTeamComent = "Kommentar Redaktionskreis"
 
-TDVK_ATTRIBUTE = (
-#   strTDVKAttribute(1) = "ID"
-    "ID",
-#   strTDVKAttribute(2) = "Basierend auf der Anforderung"
-    "Basierend auf der Anforderung",
-#   strTDVKAttribute(3) = "Status"
-    "Status",
-#   strTDVKAttribute(4) = "Temp1_Text"
-    "Temp1_Text",
-#   strTDVKAttribute(5) = "Aktion"
-    "Aktion",
-)
+class TDVCAttribute(StrEnum):
+    ID = 'ID'
+    RequirementBased = 'Basierend auf der Anforderung'
+    Status = 'Status'
+    Temp1Text = 'Temp1_text'
+    Action = 'Aktion'
 
-TF_ATTRIBUTE = (
+class TestCaseAttribute(StrEnum):
 #   strTFAttribute(1) = "ID"
-    "ID",
+    ID = 'ID'
 #   strTFAttribute(2) = "Status"
-    "Status",
+    Status = 'Status'
 #   strTFAttribute(3) = "Testfallname"
-    "Testfallname",
+    TestCaseName = 'Testfallname'
 #   strTFAttribute(4) = "Sonstige-Varianten"
-    "Sonstige-Varianten",
+    OtherVariants = 'Sonstige-Varianten'
 #   strTFAttribute(5) = "Basierend auf Testdesign"
-    "Basierend auf Testdesign",
+    TestDesignBased = 'Basierend auf Testdesign'
 #   strTFAttribute(6) = "verifiziert"
-    "verifiziert",
+    Verified = 'verifiziert'
 #   strTFAttribute(7) = "Testinstanz"
-    "Testinstanz",
-)
+    TestInstance = 'Testinstanz'
 
-FRU_TIMING_ATTRIBUTE = (
+class FRUTimingAttribute(StrEnum):
 #   strFRUTimingAttribute(1) = "FeatureName"
-    "FeatureName",
+    FeatureName = "FeatureName"
 #   strFRUTimingAttribute(2) = "Reifegrad"  'vorher "RG"
-    "Reifegrad",
+    MaturityLevel = "Reifegrad"
 #   strFRUTimingAttribute(3) = "Umsetzer"
-    "Umsetzer",
+    Implementer = "Umsetzer"
 #   strFRUTimingAttribute(4) = "FE_Meilenstein" 'vorher "Zuordnung zu I-Stufe"
-    "FE_Meilenstein",
-)
+    FEMilestone = "FE_Meilenstein"
