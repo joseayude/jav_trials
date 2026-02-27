@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 import pandas as pd
 from typing import TYPE_CHECKING
 
@@ -38,7 +39,7 @@ class Verificationskriterium:
 #               strVerifikationsID = Replace(Replace(rngTDVKAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
 #               'ID des Verifikationsauftrags erfassen
 #               verifikationKrit.VK_ID = strVerifikationsID
-                self.vk_id = str(columns[VC.ID][row]).replace('?', '').replace('r', '')
+                self.vk_id = re.sub('[\?r]', '',str(columns[VC.ID][row]))
 #               'Anforderungs-IDs einlesen
 #               anfIDs = rngTDVKAttribute(2).Offset(lngZeile, 0).Value
                 anf_ids_str = str(columns[VC.RequirementBased][row])
@@ -96,7 +97,8 @@ class Verificationskriterium:
                 self.temp1_text = columns[VC.Temp1Text][row]
 #               'Aktion einlesen
 #               verifikationKrit.VK_Aktion = rngTDVKAttribute(5).Offset(lngZeile, 0).Value
-                self.aktion = columns[VC.Action][row]
+                self.aktion = str(columns[VC.Action][row])
+                self.requirement_present = False
 #
 #   Sub addElementID(ByVal elemID2 As String)
     def add_element_id(self, anf_id:str):

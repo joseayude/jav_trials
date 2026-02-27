@@ -34,11 +34,11 @@ class TestEnvironmentEvaluations:
 #       Dim intAusgabeAuswertungTUs As Integer          'Integer für Ausgabe des Tu-Abgleichs
         self.int_output = 0
 #       Dim strAuswertungTUsFehlendeAAs As String       'String für Ausgabe der fehlenden TUs bei TD-AAs
-        self.missing_security_orders = ''
+        self.missing_safe_guards = ''
 #       Dim strAuswertungTUsFehlendeTFs As String       'String für Ausgabe der fehlenden TUs bei TFs
         self.missing_test_cases = ''
 #       Dim strAusgabeAuswertungTUsDetails As String    'String für Ausgabe des Tu-Abgleichs mit Details
-        self.output_details
+        self.output_details = ''
         #strAbgleichTUs
         self.test_environment_types = test_environment_types
         self.intAbgleichTUs = intAbgleichTUs
@@ -144,7 +144,7 @@ class TestEnvironmentEvaluations:
                 self.int_output = 1
 #           End If
 #           If intAuswertungTUs(21) > 0 Then
-            if self.evalutations[21].value > 0:
+            if self.evaluations[21].value > 0:
 #               'Alle relevanten VK-TUs mit TF (nicht operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Alle relevanten Testumgebungstypen abgedeckt"
                 self.str_output = 'Alle relevanten Testumgebungstypen abgedeckt'
@@ -155,7 +155,7 @@ class TestEnvironmentEvaluations:
                 self.int_output = 2
 #           End If
 #           If intAuswertungTUs(31) > 0 Then
-            if  self.evalutations[31].value > 0:
+            if  self.evaluations[31].value > 0:
 #               'Alle relevanten VK-TUs mit TF (teilweise operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Alle relevanten Testumgebungstypen abgedeckt"
                 self.str_output = 'Alle relevanten Testumgebungstypen abgedeckt'
@@ -167,9 +167,9 @@ class TestEnvironmentEvaluations:
 #           End If
 #           If intAuswertungTUs(11) = 0 And intAuswertungTUs(21) = 0 And intAuswertungTUs(31) = 0 Then
             if(
-                self.evalutations[11].value == 0 and 
-                self.evalutations[21].value == 0 and 
-                self.evalutations[11].value == 0
+                self.evaluations[11].value == 0 and 
+                self.evaluations[21].value == 0 and 
+                self.evaluations[11].value == 0
             ):
 #               'Keine relevanten VK-TUs vorhanden
 #               strAusgabeAuswertungTUs = "Keine relevanten Testumgebungstypen vorhanden"
@@ -190,7 +190,7 @@ class TestEnvironmentEvaluations:
 #               intAusgabeAuswertungTUs = 2
 #           End If
 #           If intAuswertungTUs(21) > 0 Then
-            if self.evaluations[21] > 0:
+            if self.evaluations[21].value > 0:
 #               'Einige relevanten VK-TUs mit TF (nicht operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen teilweise abgedeckt"
                 self.str_output = 'Relevante Testumgebungstypen teilweise abgedeckt'
@@ -214,9 +214,9 @@ class TestEnvironmentEvaluations:
 #           End If
 #           If intAuswertungTUs(11) = 0 And intAuswertungTUs(21) = 0 And intAuswertungTUs(31) = 0 Then
             if(
-                self.evalutations[11].value == 0 and 
-                self.evalutations[21].value == 0 and 
-                self.evalutations[11].value == 0
+                self.evaluations[11].value == 0 and 
+                self.evaluations[21].value == 0 and 
+                self.evaluations[11].value == 0
             ):
 #               'Keine relevanten VK-TUs abgedeckt
 #               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen nicht abgedeckt"
@@ -229,7 +229,7 @@ class TestEnvironmentEvaluations:
 #           End If
 #           'Fehlende TUs bei TFs erfassen
 #           strAuswertungTUsFehlendeTFs = strAuswertungTUs(1)
-            self.missing_test_cases = self.values[1].test_environments
+            self.missing_test_cases = self.evaluations[1].test_environments
 #       End If
 #       
 #       'Weitere relevante TUs in TFs vorhanden?
@@ -238,35 +238,35 @@ class TestEnvironmentEvaluations:
 #           'TF operativ
 #           'strAusgabeAuswertungTUsDetails = strAusgabeAuswertungTUsDetails & vbCrLf & "Weitere operative Testfälle für abweichende Testumgebungstypen vorhanden."
 #           strAuswertungTUsFehlendeAAs = strAuswertungTUs(10)
-            self.missing_security_orders = f'{self.output_details}\nWeitere operative Testfälle für abweichende Testumgebungstypen vorhanden.'
+            self.missing_safe_guards = f'{self.output_details}\nWeitere operative Testfälle für abweichende Testumgebungstypen vorhanden.'
 #       End If
 #       If intAuswertungTUs(20) > 0 Then
         if self.evaluations[20].value > 0:
 #           'TF nicht operativ
 #           'strAusgabeAuswertungTUsDetails = strAusgabeAuswertungTUsDetails & vbCrLf & "Weitere nicht operative Testfälle für abweichende Testumgebungstypen vorhanden."
 #           If strAuswertungTUsFehlendeAAs = "" Then
-            if self.missing_security_orders == '':
+            if self.missing_safe_guards == '':
 #               strAuswertungTUsFehlendeAAs = strAuswertungTUs(20)
-                self.missing_security_orders = self.evaluations[20].test_environments
+                self.missing_safe_guards = self.evaluations[20].test_environments
 #           Else
 #               strAuswertungTUsFehlendeAAs = strAuswertungTUsFehlendeAAs & ", " & strAuswertungTUs(20)
-                self.missing_security_orders = f'{self.missing_security_orders}, {self.evaluations[20].test_environments}'
+                self.missing_safe_guards = f'{self.missing_safe_guards}, {self.evaluations[20].test_environments}'
 #           End If
 #       End If
 #       If intAuswertungTUs(30) > 0 Then
-        if self.evaluations[30] > 0:
+        if self.evaluations[30].value > 0:
 #           'TF operativ und nicht operativ
 #           'strAusgabeAuswertungTUsDetails = strAusgabeAuswertungTUsDetails & vbCrLf & "Weitere operative und nicht operative Testfälle für abweichende Testumgebungstypen vorhanden."
 #           If strAuswertungTUsFehlendeAAs = "" Then
-            if self.missing_security_orders == '':
+            if self.missing_safe_guards == '':
 #               strAuswertungTUsFehlendeAAs = strAuswertungTUs(30)
-                self.missing_security_orders = self.evaluations[30].test_environments
+                self.missing_safe_guards = self.evaluations[30].test_environments
 #           Else
 #               strAuswertungTUsFehlendeAAs = strAuswertungTUsFehlendeAAs & ", " & strAuswertungTUs(30)
-                self.missing_security_orders = f'{self.missing_security_orders}, {self.evaluations[30].test_environments}'
+                self.missing_safe_guards = f'{self.missing_safe_guards}, {self.evaluations[30].test_environments}'
 #           End If
 #           strAuswertungTUsFehlendeAAs = strAuswertungTUs(30)
-            self.missing_security_orders = self.evaluations[30].test_environments
+            self.missing_safe_guards = self.evaluations[30].test_environments
             ###TODO ask someone: sentence above overwrites asignation made in previous if sentence
 #       End If
 #   End Sub

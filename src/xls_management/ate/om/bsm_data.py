@@ -21,6 +21,7 @@ class BSMData:
         fru_timing_index: dict[str,FRUTiming],
         is_specific: bool = False,
     ):
+        self.is_specific = is_specific
         self.bsm_available:str = 'ja'
         self.fru_timing_index = fru_timing_index
 #       'Neues Verifikationskriterium anlegen

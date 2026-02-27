@@ -56,8 +56,11 @@ class RequirementAttribute(StrEnum):
 class AVWProjectAttribute(StrEnum):
     Temp11SelectionField ='Temp11_Auswahlfeld'
 
+class TDProjectAttribute(StrEnum):
+    Temp11SelectionField ='Temp11_Auswahlfeld (LAH)'
+
 class OutputBSMAttribute(StrEnum):
-    RedirectedFrom = 'Abgezweigt aus'
+    RedirectedFrom = 'Abgezweigt aus'   # Use predecessors ids attribute
     ID = 'ID'
     DocumentID = 'Dokument-ID'
     BSMRelevance = 'BsM-Relevanz'
@@ -75,6 +78,7 @@ class OutputBSMAttribute(StrEnum):
     TDVC = 'TD-VK'
     TDSafeguards = 'TD-AA'
     TDTITE = 'TD-TI:TU'
+    Temp11SelectionField ='Temp11_Auswahlfeld' # Project specific attribute
     TestCase = 'Testfälle'
     OperationalComparisonTEsTDTC = 'Vergleich TUs (TD-TF) - operativ'
     MV = 'MV'
@@ -92,7 +96,6 @@ class OutputBSMAttribute(StrEnum):
     TDVCEffortEstimation ='TD-VK Effort Estimation'
     RequirementOwner = 'Anforderungsverantwortlicher'
     KWDataEvaluation = 'KW Datenauswertung'
-    Temp11SelectionField ='Temp11_Auswahlfeld'
 
         # From ouput_status() in tracking.py
 #       'Bekannte Testumgebungen
@@ -197,7 +200,7 @@ class TDAttribute(StrEnum):
 #       strTDAttribute(3) = "TD-AA"
     TDSafeGuards ='TD-AA'
 #       strTDAttribute(4) = "TD-TI:TU"
-    TDTTTE ='TD-TI:TU'
+    TDTITE ='TD-TI:TU'
 #       strTDAttribute(5) = "Testfälle"
     TestCases ='Testfälle'
 #       strTDAttribute(6) = "Vergleich TUs (TD-TF) - operativ"
@@ -216,6 +219,7 @@ class TDAttribute(StrEnum):
     LAH_Implementer ='Umsetzer (LAH)'
 #       strTDAttribute(13) = "BsM-Relevanz (LAH)"
     LAH_BsMRelevance ='BsM-Relevanz (LAH)'
+    Temp11SelectionField ='Temp11_Auswahlfeld (LAH)' # Project Specific Attribute
 #       strTDAttribute(14) = "ASIL (LAH)"
     LAH_ASIL ='ASIL (LAH)'
 #       strTDAttribute(15) = "Feature (LAH)"
