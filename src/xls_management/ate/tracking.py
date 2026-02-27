@@ -1214,8 +1214,9 @@ class ATEStatus:
 #   End Function
 #   
 #   Private Function AusgabeSammlungLFEinfach(ByRef list As Collection) As String
-    def AusgabeSammlungLFEinfach(self):
-        pass #TODO
+    def AusgabeSammlungLFEinfach(self, input_list:list[str]|tuple[str]):
+        ###TOBEDEL: it can be replaced by a join sentence.
+        return '\n'.join(input_list)
 #       Dim strTemp As String
 #       Dim i As Integer
 #       
@@ -1236,7 +1237,7 @@ class ATEStatus:
 #   
 #   Private Function AusgabeSammlungKomma(ByRef list As Collection) As String
     def AusgabeSammlungKomma(self):
-        ###TOBEDEL: can be replaced by a join sentence.
+        ###TOBEDEL: it can be replaced by a join sentence.
         return ', '.join(list)
 #       Dim strTemp As String
 #       Dim i As Integer
@@ -2498,16 +2499,16 @@ class ATEStatus:
 
 #   
 #   Private Function AuswertungUnterschiedlicheIStufen(ByRef IStufen As Collection) As Boolean
-    def AuswertungUnterschiedlicheIStufen(self, i_stufen:list|tuple) -> bool:
+    def different_i_levels(self, i_levels:list|tuple) -> bool:
 #       Dim i As Integer
 #       
 #       AuswertungUnterschiedlicheIStufen = False
 #       
 #       If IStufen.Count > 1 Then
 #           For i = 2 To IStufen.Count
-        for i in range(2,len(i_stufen)):
+        for i in range(1, len(i_levels)):
 #               If IStufen.Item(i) <> IStufen.Item(i - 1) Then
-            if i_stufen[i] != i_stufen[i-1]:
+            if i_levels[i] != i_levels[i-1]:
                 return True
 #                   AuswertungUnterschiedlicheIStufen = True
 #               End If
