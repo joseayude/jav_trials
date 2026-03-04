@@ -24,7 +24,10 @@ class DBInfo:
     def new_output(self, attributes:tuple[str], sheet_name:str)-> 'DBInfo':
         output = DBInfo(
             attributes=attributes,
-            columns= pd.DataFrame({name : [] for name in attributes})
+            columns= pd.DataFrame(
+                {name : [] for name in attributes},
+                dtype=str,
+            )
         )
         output.workbook = self.workbook
         output.sheet_name = sheet_name

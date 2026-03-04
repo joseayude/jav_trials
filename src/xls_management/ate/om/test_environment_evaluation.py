@@ -238,7 +238,7 @@ class TestEnvironmentEvaluations:
 #           'TF operativ
 #           'strAusgabeAuswertungTUsDetails = strAusgabeAuswertungTUsDetails & vbCrLf & "Weitere operative Testfälle für abweichende Testumgebungstypen vorhanden."
 #           strAuswertungTUsFehlendeAAs = strAuswertungTUs(10)
-            self.missing_safe_guards = f'{self.output_details}\nWeitere operative Testfälle für abweichende Testumgebungstypen vorhanden.'
+            self.missing_safe_guards =  self.evaluations[10].test_environments
 #       End If
 #       If intAuswertungTUs(20) > 0 Then
         if self.evaluations[20].value > 0:

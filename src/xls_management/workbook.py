@@ -50,7 +50,11 @@ class Workbook:
             elif index < len(names):
                 name = names[index]
             if name in names:
-                df = pd.read_excel(self.file_path, sheet_name=name)
+                df = pd.read_excel(
+                    self.file_path,
+                    sheet_name=name,
+                    dtype=str,
+                )
             else:
                 raise IndexError(f"{index} is wrong value for {', '.join(names)}")
         except FileNotFoundError:
@@ -62,25 +66,47 @@ class Workbook:
     def all_sheets(self) -> Generator[tuple[str,pd.DataFrame],None,None]:
         """iterator """
         for name in self.sheet_names():
-            df:pd.DataFrame = pd.read_excel(self.file_path, sheet_name=name)
+            df:pd.DataFrame = pd.read_excel(self.file_path, sheet_name=name, dtype=str)
             yield name, df
     
     def append_worksheet(self, data_frame:pd.DataFrame, name:str):
         try:
             if os.path.exists(self.file_path):
-                # Append to existing workbook
-                with pd.ExcelWriter(
-                    self.file_path,
-                    mode='a',
-                    engine='openpyxl',
-                    if_sheet_exists='replace'
-                ) as writer:
-                    data_frame.to_excel(writer, sheet_name=name, index=False)
+                kvargs = {
+                    'mode':'a',
+                    'engine':'openpyxl',
+                    'if_sheet_exists':'replace',
+                }
             else:
-                if not os.path.exists(self.file_path.parent):
-                    os.makedirs(self.file_path.parent, exist_ok=True)
-                # Create new workbook
-                data_frame.to_excel(self.file_path, sheet_name=name, index=False)
+                kvargs = {
+                    'mode':'w',
+                    'engine':'xlsxwriter',
+                }
+            # Append to existing workbook
+            with pd.ExcelWriter(
+                self.file_path,
+                **kvargs,
+            ) as writer:
+                df = data_frame.replace('nan','')
+                df.to_excel(
+                    writer,
+                    sheet_name=name,
+                    index=False,
+                freeze_panes=(1,3),
+                autofilter=True,
+                )
+                writer.sheets[name].autofit()
+            #else:
+            #    if not os.path.exists(self.file_path.parent):
+            #        os.makedirs(self.file_path.parent, exist_ok=True)
+            #    # Create new workbook
+            #    data_frame.to_excel(
+            #        self.file_path,
+            #        sheet_name=name,
+            #        index=False,
+            #        freeze_panes=(1,3),
+            #        autofilter=True,
+            #    )
 
             print(f"DataFrame saved to '{name}' in {self.file_path}")
 

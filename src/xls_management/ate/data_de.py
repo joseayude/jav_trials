@@ -61,41 +61,77 @@ class TDProjectAttribute(StrEnum):
 
 class OutputBSMAttribute(StrEnum):
     RedirectedFrom = 'Abgezweigt aus'   # Use predecessors ids attribute
-    ID = 'ID'
-    DocumentID = 'Dokument-ID'
-    BSMRelevance = 'BsM-Relevanz'
-    BSMSaFuSiAssesment ='BSM-SaFuSi Bewertung'
-    BSMZZAssesment = 'BSM-ZZ Bewertung'
-    BSMEDAssesment = 'BSM-ED Bewertung'
-    BSMFFFAssesment = 'BSM-FFF Bewertung'
-    BSMOAssesment = 'BSM-O Bewertung'
-    BSMSeAssesment = 'BSM-Se Bewertung'
-    ASIL = 'ASIL'
-    Feature = 'Feature'
-    MaturityLevel = 'Reifegrad'
-    Implementer = 'Umsetzer'
-    Status = 'Status'
-    TDVC = 'TD-VK'
-    TDSafeguards = 'TD-AA'
-    TDTITE = 'TD-TI:TU'
-    Temp11SelectionField ='Temp11_Auswahlfeld' # Project specific attribute
-    TestCase = 'Testfälle'
-    OperationalComparisonTEsTDTC = 'Vergleich TUs (TD-TF) - operativ'
-    MV = 'MV'
-    Category = 'Kategorie'
-    Document = 'Dokument'
-    RejectedNotTestable = '#abgelehnt_nicht_testbar'
-    AssignedILevel = 'Zugeordnete I-Stufe'
-    StatusTDVC = 'Status TD-VK'
-    MissingTEInTDSafeguards = 'Fehlende TUs bei TD-AAs'
-    MissingTEInTCs = 'Fehlende TUs bei TFs'
-    ComparisonExplanations ='Erläuterungen zum Vergleich'
-    TestingCluster = 'Cluster Testing'
-    Project = 'Projekt'
-    TDVCTemp1Text ='TD-VK temp1_Text'
-    TDVCEffortEstimation ='TD-VK Effort Estimation'
-    RequirementOwner = 'Anforderungsverantwortlicher'
+#   KW Datenauswertung
     KWDataEvaluation = 'KW Datenauswertung'
+#   ID
+    ID = 'ID'
+#   Dokument-ID
+    DocumentID = 'Dokument-ID'
+#   Dokument
+    Document = 'Dokument'
+#   Kategorie
+    Category = 'Kategorie'
+#   Feature
+    Feature = 'Feature'
+#   Reifegrad
+    MaturityLevel = 'Reifegrad'
+#   Umsetzer
+    Implementer = 'Umsetzer'
+#   BsM-Relevanz
+    BSMRelevance = 'BsM-Relevanz'
+#   BSM-SaFuSi Bewertung
+    BSMSaFuSiAssesment ='BSM-SaFuSi Bewertung'
+#   BSM-ZZ Bewertung
+    BSMZZAssesment = 'BSM-ZZ Bewertung'
+#   BSM-ED Bewertung
+    BSMEDAssesment = 'BSM-ED Bewertung'
+#   BSM-FFF Bewertung
+    BSMFFFAssesment = 'BSM-FFF Bewertung'
+#   BSM-O Bewertung
+    BSMOAssesment = 'BSM-O Bewertung'
+#   BSM-Se Bewertung
+    BSMSeAssesment = 'BSM-Se Bewertung'
+#   ASIL
+    ASIL = 'ASIL'
+#   Status
+    Status = 'Status'
+#   Temp11_Auswahlfeld
+    Temp11SelectionField ='Temp11_Auswahlfeld' # Project specific attribute
+#   Cluster Testing
+    TestingCluster = 'Cluster Testing'
+#   #abgelehnt_nicht_testbar
+    RejectedNotTestable = '#abgelehnt_nicht_testbar'
+#   MV
+    MV = 'MV'
+#   Anforderungsverantwortlicher
+    RequirementOwner = 'Anforderungsverantwortlicher'
+#   TD-VK
+    TDVC = 'TD-VK'
+#   Status TD-VK
+    StatusTDVC = 'Status TD-VK'
+#   TD-VK temp1_Text
+    TDVCTemp1Text ='TD-VK temp1_Text'
+#   TD-VK Effort Estimation
+    TDVCEffortEstimation ='TD-VK Effort Estimation'
+#   TD-AA
+    TDSafeguards = 'TD-AA'
+#   TD-TI:TU
+    TDTITE = 'TD-TI:TU'
+#   Testfälle
+    TestCase = 'Testfälle'
+#   Vergleich TUs (TD-TF) - operativ
+    OperationalComparisonTEsTDTC = 'Vergleich TUs (TD-TF) - operativ'
+#   Erläuterungen zum Vergleich
+    ComparisonExplanations ='Erläuterungen zum Vergleich'
+#   Fehlende TUs bei TD-AAs
+    MissingTEInTDSafeguards = 'Fehlende TUs bei TD-AAs'
+#   Fehlende TUs bei TFs
+    MissingTEInTCs = 'Fehlende TUs bei TFs'
+#   Zugeordnete I-Stufe
+    AssignedILevel = 'Zugeordnete I-Stufe'
+#   Projekt
+    Project = 'Projekt'
+    
 
         # From ouput_status() in tracking.py
 #       'Bekannte Testumgebungen
@@ -193,54 +229,80 @@ class FRUTimingAttribute(StrEnum):
     FEMilestone = "FE_Meilenstein"
 
 class TDAttribute(StrEnum):
-#       strTDAttribute(1) = "TD-VK"
-    TDVC ='TD-VK'
-#       strTDAttribute(2) = "Status TD-VK"
-    StatusTDVC ='Status TD-VK'
-#       strTDAttribute(3) = "TD-AA"
-    TDSafeGuards ='TD-AA'
-#       strTDAttribute(4) = "TD-TI:TU"
-    TDTITE ='TD-TI:TU'
-#       strTDAttribute(5) = "Testfälle"
-    TestCases ='Testfälle'
-#       strTDAttribute(6) = "Vergleich TUs (TD-TF) - operativ"
-    OperativeTEComparisonTDTC ='Vergleich TUs (TD-TF) - operativ'
-#       strTDAttribute(7) = "Erläuterungen zum Vergleich"
-    ComparisonExplanations ='Erläuterungen zum Vergleich'
-#       strTDAttribute(8) = "Fehlende TUs bei TD-AAs"
-    MissingTEsInTDSafeGuards ='Fehlende TUs bei TD-AAs'
-#       strTDAttribute(9) = "Fehlende TUs bei TFs"
-    MissingTEsInTCs ='Fehlende TUs bei TFs'
-#       strTDAttribute(10) = "Anforderungs-IDs"
-    RequirementIDs ='Anforderungs-IDs'
-#       strTDAttribute(11) = "Zugeordnete I-Stufe"
-    AsignedILevel ='Zugeordnete I-Stufe'
-#       strTDAttribute(12) = "Umsetzer (LAH)"
-    LAH_Implementer ='Umsetzer (LAH)'
-#       strTDAttribute(13) = "BsM-Relevanz (LAH)"
-    LAH_BsMRelevance ='BsM-Relevanz (LAH)'
-    Temp11SelectionField ='Temp11_Auswahlfeld (LAH)' # Project Specific Attribute
-#       strTDAttribute(14) = "ASIL (LAH)"
-    LAH_ASIL ='ASIL (LAH)'
-#       strTDAttribute(15) = "Feature (LAH)"
-    LAH_Feature ='Feature (LAH)'
-#       strTDAttribute(16) = "Reifegrad (LAH)"
-    LAH_MaturityLevel ='Reifegrad (LAH)'
-#       strTDAttribute(17) = "MV (LAH)"
-    LAH_MV ='MV (LAH)'
-#       strTDAttribute(18) = "LAH-ID"
-    LAH_ID ='LAH-ID'
-#       strTDAttribute(19) = "Dokumente (LAH)"
-    LAH_Document ='Dokumente (LAH)'
-#       strTDAttribute(20) = "Cluster Testing"
-    TestingCluster ='Cluster Testing'
-#       strTDAttribute(21) = "Projekt"
-    Project ='Projekt'
-#       strTDAttribute(22) = "TD-VK temp1_Text"
-    TDVCTemp1Text ='TD-VK temp1_Text'
-#       strTDAttribute(23) = "TD-VK Effort Estimation"
-    TDVCEffortEstimation ='TD-VK Effort Estimation'
-#       strTDAttribute(24) = "Anforderungsverantwortliche (LAH)"
-    LAH_RequirementOwner ='Anforderungsverantwortliche (LAH)'
+#   KW Datenauswertung
 #       strTDAttribute(25) = "KW Datenauswertung"
     KWDataAnalysis ='KW Datenauswertung'
+#   TD-VK
+#       strTDAttribute(1) = "TD-VK"
+    TDVC ='TD-VK'
+#   Status TD-VK
+#       strTDAttribute(2) = "Status TD-VK"
+    StatusTDVC ='Status TD-VK'
+#   TD-VK temp1_Text
+#       strTDAttribute(22) = "TD-VK temp1_Text"
+    TDVCTemp1Text ='TD-VK temp1_Text'
+#   TD-VK Effort Estimation
+#       strTDAttribute(23) = "TD-VK Effort Estimation"
+    TDVCEffortEstimation ='TD-VK Effort Estimation'
+#   TD-AA
+#       strTDAttribute(3) = "TD-AA"
+    TDSafeGuards ='TD-AA'
+#   TD-TI:TU
+#       strTDAttribute(4) = "TD-TI:TU"
+    TDTITE ='TD-TI:TU'
+#   Testfälle
+#       strTDAttribute(5) = "Testfälle"
+    TestCases ='Testfälle'
+#   Vergleich TUs (TD-TF) - operativ
+#       strTDAttribute(6) = "Vergleich TUs (TD-TF) - operativ"
+    OperativeTEComparisonTDTC ='Vergleich TUs (TD-TF) - operativ'
+#   Erläuterungen zum Vergleich
+#       strTDAttribute(7) = "Erläuterungen zum Vergleich"
+    ComparisonExplanations ='Erläuterungen zum Vergleich'
+#   Fehlende TUs bei TD-AAs
+#       strTDAttribute(8) = "Fehlende TUs bei TD-AAs"
+    MissingTEsInTDSafeGuards ='Fehlende TUs bei TD-AAs'
+#   Fehlende TUs bei TFs
+#       strTDAttribute(9) = "Fehlende TUs bei TFs"
+    MissingTEsInTCs ='Fehlende TUs bei TFs'
+#   Anforderungs-IDs
+#       strTDAttribute(10) = "Anforderungs-IDs"
+    RequirementIDs ='Anforderungs-IDs'
+#   Temp11_Auswahlfeld (LAH)
+    Temp11SelectionField ='Temp11_Auswahlfeld (LAH)' # Project Specific Attribute
+#   Cluster Testing
+#       strTDAttribute(20) = "Cluster Testing"
+    TestingCluster ='Cluster Testing'
+#   ASIL (LAH)
+#       strTDAttribute(14) = "ASIL (LAH)"
+    LAH_ASIL ='ASIL (LAH)'
+#   BsM-Relevanz (LAH)
+#       strTDAttribute(13) = "BsM-Relevanz (LAH)"
+    LAH_BsMRelevance ='BsM-Relevanz (LAH)'
+#   Feature (LAH)
+#       strTDAttribute(15) = "Feature (LAH)"
+    LAH_Feature ='Feature (LAH)'
+#   Reifegrad (LAH)
+#       strTDAttribute(16) = "Reifegrad (LAH)"
+    LAH_MaturityLevel ='Reifegrad (LAH)'
+#   Umsetzer (LAH)
+#       strTDAttribute(12) = "Umsetzer (LAH)"
+    LAH_Implementer ='Umsetzer (LAH)'
+#   MV (LAH)
+#       strTDAttribute(17) = "MV (LAH)"
+    LAH_MV ='MV (LAH)'
+#   Anforderungsverantwortliche (LAH)
+#       strTDAttribute(24) = "Anforderungsverantwortliche (LAH)"
+    LAH_RequirementOwner ='Anforderungsverantwortliche (LAH)'
+#   LAH-ID
+#       strTDAttribute(18) = "LAH-ID"
+    LAH_ID ='LAH-ID'
+#   Dokumente (LAH)
+#       strTDAttribute(19) = "Dokumente (LAH)"
+    LAH_Document ='Dokumente (LAH)'
+#   Zugeordnete I-Stufe
+#       strTDAttribute(11) = "Zugeordnete I-Stufe"
+    AsignedILevel ='Zugeordnete I-Stufe'
+#   Projekt
+#       strTDAttribute(21) = "Projekt"
+    Project ='Projekt'

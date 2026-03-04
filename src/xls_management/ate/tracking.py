@@ -37,6 +37,8 @@ from importlib.metadata import version
 
 from xls_management.workbook import Workbook
 
+CRLF ='\r\n'
+
 #Option Explicit
 #
 #'Dokumentenabfrage einzeln \\vw.vwg\vwdfs\K-E\EF\1508\Groups\EFBS2_Konsulter\Testmanagement_EFDB\Projekt MQB48W\Testdesign\Statistik_TD_TS\
@@ -1225,7 +1227,7 @@ class ATEStatus:
 #   Private Function AusgabeSammlungLFEinfach(ByRef list As Collection) As String
     def AusgabeSammlungLFEinfach(self, input_list:list[str]|tuple[str]):
         ###TOBEDEL: it can be replaced by a join sentence.
-        return '\n'.join(input_list)
+        return CRLF.join(input_list)
 #       Dim strTemp As String
 #       Dim i As Integer
 #       
@@ -1317,7 +1319,7 @@ class ATEStatus:
         str_test_cases = ''
 #       If varErfassteBsMDatensatzItem.Testfaelle.Count > 0 Then
         if len(test_cases) > 0:
-            str_test_cases = '\n'.join([f"{tc.id} - {tc.status} - {tc.testinstanz} - {tc.testumgebungstyp}" for tc in test_cases]) 
+            str_test_cases = CRLF.join([f"{tc.id} - {tc.status} - {tc.testinstanz} - {tc.testumgebungstyp}" for tc in test_cases]) 
 #           For Each varErfassteTFItem In varErfassteBsMDatensatzItem.Testfaelle
             tc:TestCase
             for tc in test_cases:
@@ -1525,18 +1527,17 @@ class ATEStatus:
 #       '#35: Temp11_Auswahlfeld
 #       
 #       lngDatensatz = 1
+        bsm_attributes = [field.value for field in OutputBSMAttribute]
 #       If blnAVWVorgaengerIDsVerwenden = False Then
-        if self.use_predecessor_ids:
 #           intZielspalte = 0
 #           ReDim strBsMAttribute(1 To 34)
-            start = 1
 #       Else
-        else:
+        if not self.use_predecessor_ids:
 #           intZielspalte = 1
 #           ReDim strBsMAttribute(0 To 34)
-            start = 0
+            bsm_attributes.remove(OutputBSMAttribute.RedirectedFrom)
 #       End If
-        bsm_attributes = [field.value for field in islice(OutputBSMAttribute, start, len(OutputBSMAttribute))]
+        
         ###Moved below to combine with is_project_specific condition
 #       ReDim rngBsMAttribute(LBound(strBsMAttribute, 1) To UBound(strBsMAttribute, 1))
 #       'Name und Position der Tabellenattribute
@@ -1683,7 +1684,7 @@ class ATEStatus:
 #       For Each varErfassteBsMDatensatzItem In BsMDatenList
         bsm_dataset:BSMData|BSMSuccessorData
         for bsm_dataset in self.bsm_datasets.values():
-            row_output = {att:'' for att in OutputBSMAttribute}
+            row_output = {att:'' for att in bsm_attributes}
 #           'Zähler für Datensatz/Zeile
 #           lngDatensatz = lngDatensatz + 1
             dataset_count += 1
@@ -1868,7 +1869,7 @@ class ATEStatus:
                             #implemented in if sentence above this for loop
 #                       Else
 #                           strTDAA = strTDAA & vbCrLf & varErfassteTDAAItem.abs_ID
-                        strTDAA = f"{strTDAA}\n{security_order.abs_id}"
+                        strTDAA = f"{strTDAA}\n\r{security_order.abs_id}"
 #                       End If
 #                       'Ti-Tu-Kombinationen zusammenführen
 #                       If strTDTiTu = "" Then
@@ -1876,7 +1877,7 @@ class ATEStatus:
                             #implemented in if sentence above this for loop
 #                       Else
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                        strTDTiTu = f'{strTDTiTu}\n{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                        strTDTiTu = f'{strTDTiTu}\n\r{security_order.testinstanz}: {security_order.testumgebungstyp}'
 #                       End If
 #                       
 #                       'Auswertung ob relevante Testinstanzen abgedeckt sind
@@ -2018,7 +2019,7 @@ class ATEStatus:
 #       'Weitere TUs zusammenfassen
 #       If intWeitereTUs > 0 Then
         if len(self.other_test_environment_output) > 0:
-            self.other_test_environment_output = '\n'.join(self.other_test_environment)
+            self.other_test_environment_output = CRLF.join(self.other_test_environment)
 #           For i = LBound(strWeitereTUs, 1) To UBound(strWeitereTUs, 1)
             #for other_te_i in range(other_test_environment_top):
 #               If strWeitereTUsAusgabe = "" Then
@@ -2061,7 +2062,10 @@ class ATEStatus:
 #       wksBsM.Rows(lngDatensatz).EntireRow.Hidden = True
         self.bsm_output_data = bsm_output_data
         self.output_workbook.append_worksheet(
-            data_frame=pd.DataFrame(bsm_output_data),
+            data_frame=pd.DataFrame(
+                bsm_output_data,
+                dtype=str
+            ),
             name=worksheet_name,
         )
 #   End Sub
@@ -2257,47 +2261,47 @@ class ATEStatus:
                 row_data[TDAttribute.TDVCTemp1Text] = verification_criterion.temp1_text
 #               'Ausgabe Anforderungs-IDs
 #               rngTDAttribute(10).Offset(lngDatensatz, 0).Value = AusgabeSammlungLF(Verifikationskriterium.anf_ids)
-                row_data[TDAttribute.RequirementIDs] = '\n'.join(verification_criterion.anf_ids)
+                row_data[TDAttribute.RequirementIDs] = CRLF.join(verification_criterion.anf_ids)
 #               'Ausgabe Zugeordnete I-Stufe
 #               rngTDAttribute(11).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_IStufen)
-                row_data[TDAttribute.AsignedILevel] = verification_criterion.anf_i_stufen
+                row_data[TDAttribute.AsignedILevel] = CRLF.join(verification_criterion.anf_i_stufen)
                 ###TODO cell formatting: backgroundcolour
 #               If AuswertungUnterschiedlicheIStufen(Verifikationskriterium.anf_IStufen) = True Then
 #                   rngTDAttribute(11).Offset(lngDatensatz, 0).Interior.Color = RGB(255, 255, 102)
 #               End If
 #               'Ausgabe Umsetzer
 #               rngTDAttribute(12).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Umsetzer)
-                row_data[TDAttribute.LAH_Implementer] = verification_criterion.anf_umsetzer
+                row_data[TDAttribute.LAH_Implementer] = CRLF.join(verification_criterion.anf_umsetzer)
 #               'Ausgabe BsM-Relevanz
 #               rngTDAttribute(13).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_BsMRelevanz)
-                row_data[TDAttribute.LAH_BsMRelevance] = verification_criterion.anf_bsm_relevanz
+                row_data[TDAttribute.LAH_BsMRelevance] = CRLF.join(verification_criterion.anf_bsm_relevanz)
 #               'Ausgabe ASIL
 #               rngTDAttribute(14).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_ASIL)
-                row_data[TDAttribute.LAH_ASIL] = verification_criterion.anf_asil
+                row_data[TDAttribute.LAH_ASIL] = CRLF.join(verification_criterion.anf_asil)
 #               'Ausgabe Feature
 #               rngTDAttribute(15).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Feature)
-                row_data[TDAttribute.LAH_Feature] = verification_criterion.anf_feature
+                row_data[TDAttribute.LAH_Feature] = CRLF.join(verification_criterion.anf_feature)
 #               'Ausgabe Reifegrad
 #               rngTDAttribute(16).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Reifegrad)
-                row_data[TDAttribute.LAH_MaturityLevel] = verification_criterion.anf_reifegrad
+                row_data[TDAttribute.LAH_MaturityLevel] = CRLF.join(verification_criterion.anf_reifegrad)
 #               'Ausgabe Modulverantwortlicher
 #               rngTDAttribute(17).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_MV)
-                row_data[TDAttribute.LAH_MV] = verification_criterion.anf_mv
+                row_data[TDAttribute.LAH_MV] = CRLF.join(verification_criterion.anf_mv)
 #               'Ausgabe LAH-IDs
 #               rngTDAttribute(18).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_LAHID)
-                row_data[TDAttribute.LAH_ID] = verification_criterion.anf_lah_id
+                row_data[TDAttribute.LAH_ID] = CRLF.join(verification_criterion.anf_lah_id)
 #               'Ausgabe LAH-Namen
 #               rngTDAttribute(19).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_LAHNamen)
-                row_data[TDAttribute.LAH_Document] = verification_criterion.anf_lah_namen
+                row_data[TDAttribute.LAH_Document] = CRLF.join(verification_criterion.anf_lah_namen)
 #               'Ausgabe Cluster Testing
 #               rngTDAttribute(20).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_ClusterTesting)
-                row_data[TDAttribute.TestingCluster] = verification_criterion.anf_cluster_testing
+                row_data[TDAttribute.TestingCluster] = CRLF.join(verification_criterion.anf_cluster_testing)
 #               'Ausgabe Projekt
 #               rngTDAttribute(21).Offset(lngDatensatz, 0).Value = strProjekt
                 row_data[TDAttribute.Project] = self.project
 #               'Ausgabe Anforderungsverantwortliche
 #               rngTDAttribute(24).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Anforderungsverantwortliche)
-                row_data[TDAttribute.LAH_RequirementOwner] = verification_criterion.anf_anforderungsverantwortliche
+                row_data[TDAttribute.LAH_RequirementOwner] = CRLF.join(verification_criterion.anf_anforderungsverantwortliche)
 #               
 #               'Ausgabe Aufwandsschätzung auf Basis der Vorkommen von "Use-Case", "Step", "Aktion"
 #               dblTDVKAnzahlUseCases = 1
@@ -2353,7 +2357,7 @@ class ATEStatus:
                             # implemented in if above for
 #                       Else
 #                           strTDAA = strTDAA & vbCrLf & varErfassteTDAAItem.abs_ID
-                        strTDAA = f"{strTDAA}\n{security_order.abs_id}"
+                        strTDAA = f"{strTDAA}r\n{security_order.abs_id}"
 #                       End If
 #                       'Ti-Tu-Kombinationen zusammenführen
 #                       If strTDTiTu = "" Then
@@ -2361,7 +2365,7 @@ class ATEStatus:
                             # implemented in if above for
 #                       Else
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                        strTDTiTu = f'{strTDTiTu}\n{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                        strTDTiTu = f'{strTDTiTu}r\n{security_order.testinstanz}: {security_order.testumgebungstyp}'
 #                       End If
 #
 #       'Abgleich der vorhandenen relevanten Testumgebungen                         
@@ -2440,7 +2444,7 @@ class ATEStatus:
 #               If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
                 if self.is_project_specific:
 #                   rngTDAttribute(26).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Temp11_Auswahlfeld)
-                    row_data[TDProjectAttribute.Temp11SelectionField] = "\n".join(verification_criterion.anf_temp11_auswahlfeld)
+                    row_data[TDProjectAttribute.Temp11SelectionField] = CRLF.join(verification_criterion.anf_temp11_auswahlfeld)
 #               End If
 #           
 #           End If
@@ -2479,7 +2483,10 @@ class ATEStatus:
         
         self.td_output_data = td_output_data
         self.output_workbook.append_worksheet(
-            data_frame=pd.DataFrame(td_output_data),
+            data_frame=pd.DataFrame(
+                td_output_data,
+                dtype=str,
+            ),
             name=worksheet_name,
         )
 #       End Sub

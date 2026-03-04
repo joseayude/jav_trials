@@ -33,7 +33,7 @@ class BSMSuccessorData(BSMData):
 #                   Else
                     else:
 #                       BSMDatensatz.AVWAbgelehntNichtTestbar = BSMDatensatz.AVWAbgelehntNichtTestbar & vbCrLf & "x (Master)"
-                        self.avw_abgelehnt_nicht_testbar = f'{self.avw_abgelehnt_nicht_testbar}\nx (Master)'   
+                        self.avw_abgelehnt_nicht_testbar = f'{self.avw_abgelehnt_nicht_testbar}\n\rx (Master)'   
 #                   End If
 #               End If
 #           End If
