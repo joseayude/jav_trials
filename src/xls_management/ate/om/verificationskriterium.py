@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from xls_management.ate.om.test_case import TestCase
-from xls_management.utils.aux import list_from_comma_separated_str
+from xls_management.utils.tools import list_from_comma_separated_str
 from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
 from xls_management.ate.data_de import TDVCAttribute as VC # Verification Criterion
 

@@ -30,7 +30,7 @@ High-level overview of the project layout with key files and directories.
 │     │  └─ project_form.py
 │     └─ utils/                 # Support utilities used across package
 │        ├─ __init__.py
-│        ├─ aux.py              # Aux helpers used in tests and modules
+│        ├─ tools.py              # tools helpers used in tests and modules
 │        └─ color.py            # Terminal color helpers
 └─ test/                        # Unit tests and fixtures
     ├─ test_config.py

@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest.mock import patch
 from xls_management.ate.om.db_info import DBInfo
-from xls_management.utils.aux import all_in_sequence
+from xls_management.utils.tools import all_in_sequence
 from test import working_path
 
 def test_db_info_init():
@@ -17,7 +17,7 @@ def test_db_info_einlesen_datei():
     file_path: Path = working_path / f"test/data/example01.xlsx"
     with patch('xls_management.tui.file_picker.path_from_file_picker', return_value=file_path):
         from xls_management.ate.om.db_info import DBInfo
-        from xls_management.utils.aux import all_in_sequence
+        from xls_management.utils.tools import all_in_sequence
         data = DBInfo(attributes=('License plate', 'Brand', 'Modell'))
         success = data.einlesen_datei("Test")
         assert success is True
@@ -37,7 +37,7 @@ def test_db_info_einlesen_datei_error():
     file_path: Path = working_path / f"test/data/example01.xlsx"
     with patch('xls_management.tui.file_picker.path_from_file_picker', return_value=file_path):
         from xls_management.ate.om.db_info import DBInfo
-        from xls_management.utils.aux import all_in_sequence
+        from xls_management.utils.tools import all_in_sequence
         data = DBInfo(attributes=('Name', 'License plate', 'Brand', 'Modell'))
         success = data.einlesen_datei("Test")
         assert success is False

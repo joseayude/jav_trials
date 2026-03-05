@@ -31,7 +31,7 @@ from xls_management.ate.data_de import (
 from xls_management.ate.project import project_combo_box
 from xls_management.tui.msgbox import msgbox
 from xls_management.config import ATEConfig
-from xls_management.utils.aux import list_from_comma_separated_str
+from xls_management.utils.tools import list_from_comma_separated_str
 
 from importlib.metadata import version
 

@@ -1,6 +1,6 @@
 import re
 
-from xls_management.utils.aux import all_in_sequence, list_from_comma_separated_str
+from xls_management.utils.tools import all_in_sequence, list_from_comma_separated_str
 
 
 def test_all_in_sequence():
