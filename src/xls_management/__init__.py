@@ -1,5 +1,11 @@
 from pathlib import Path
 import os
+import platform
 
 ROOTPATH = Path(__file__).parent
-HOMEPATH = Path(os.environ['HOME'])
+home_var:str
+if platform.system():
+    home_var='USERPROFILE'
+else:
+    home_var='HOME'
+HOMEPATH = Path(os.getenv(home_var))
