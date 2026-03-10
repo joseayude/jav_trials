@@ -41,7 +41,7 @@ class BSMData:
         self.avw_implementer = str(columns[RequirementAttribute.Implementer][row])
 #       'Dokument-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #       BSMDatensatz.AVWDokumentID = Replace(Replace(CStr(rngAVWAttribute(2).Offset(lngZeile, 0).Value), "?", ""), "r", "")
-        self.avw_dokument_id = re.sub('[\?r]','',str(columns[RequirementAttribute.DocumentID][row]))
+        self.avw_dokument_id = re.sub(r'[\?r]','',str(columns[RequirementAttribute.DocumentID][row]))
 #       'Dokument-Name einlesen
 #       BSMDatensatz.AVWDokumentName = CStr(rngAVWAttribute(19).Offset(lngZeile, 0).Value)
         self.avw_dokument_name = str(columns[RequirementAttribute.Document][row])
@@ -50,7 +50,7 @@ class BSMData:
         self.avw_mv = str(columns[RequirementAttribute.MV][row])
 #       'Anforderungs-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #       BSMDatensatz.AVWID = Replace(Replace(CStr(rngAVWAttribute(1).Offset(lngZeile, 0).Value), "?", ""), "r", "")
-        self.avw_id = re.sub('[\?r]','',str(columns[RequirementAttribute.ID][row]))
+        self.avw_id = re.sub(r'[\?r]','',str(columns[RequirementAttribute.ID][row]))
 #       'Status einlesen
 #       BSMDatensatz.AVWStatus = CStr(rngAVWAttribute(6).Offset(lngZeile, 0).Value)
         self.avw_status = str(columns[RequirementAttribute.Status][row])

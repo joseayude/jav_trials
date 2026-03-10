@@ -35,9 +35,9 @@ from xls_management.utils.tools import list_from_comma_separated_str
 
 from importlib.metadata import version
 
-from xls_management.workbook import Workbook
+from xls_management.xlsx.workbook import Workbook
 
-CRLF ='\r\n'
+CRLF ='_x000D_\n'
 
 #Option Explicit
 #
@@ -52,7 +52,7 @@ class ATEStatus:
         # set_signatures
         today = date.today()
         self.week_number = int(today.strftime('%W')) + 1
-        self.date_signature = f"{today.year}/{self.week_number:03d}"
+        self.date_signature = f"{today.year}/{self.week_number:02d}"
         self.date_suffix = f"{self.week_number:03d}_{today.year}"
 
         self.config=ATEConfig()
@@ -133,8 +133,8 @@ class ATEStatus:
         file_path_BsM:str|None = self.config.get('workbook_path_BsM')
         assert file_path_BsM is not None
         self.workbook_BsM = Workbook(file_path=file_path_BsM)
-        output_path = self.workbook_BsM.file_path.parent / "output.xlsx"
-        self.output_workbook = Workbook(output_path)
+        #self.output_workbook = Workbook(output_path)
+    
 
     def perform_status(self):
 #       'Allgemein
@@ -221,13 +221,25 @@ class ATEStatus:
                 self.read_requirement_raw_data()
 #               'Ausgabe ATE-Status
 #               Call AusgabeATEStatus(wbBsM, wksBsM, strBsMAttribute, rngBsMAttribute, strWeitereTUsAusgabe, strDateinamen, strProjekt)
-            self.output_status()
 #               'Ausgabe TD-Status
 #               Call AusgabeTDStatus(wbBsM, wksTD, strTDAttribute, rngTDAttribute, strDateinamen, strProjekt)
-            self.output_status_TD()
 #               'Geöffnete Dateien schliessen
 #               Call SchliessenWb(wbBsM, wbAVW, wbAVWMaster, wbTDVK, wbTDAA, wbTF, wbFRUTiming)
-            self.close_workbooks()
+                output_path = self.workbook_BsM.file_path.parent / "output.xlsx"
+                wb = Workbook(output_path)
+                with wb.writer() as writer:
+                    for row_data_set, name in self.output_worksheets():
+                        try:
+                            df:pd.DataFrame = pd.DataFrame(
+                                row_data_set,
+                                dtype=str
+                            )
+                            wb.append_worksheet(writer, df, name)
+                        except PermissionError:
+                            print("Error: The file is open in another program. Please close it and try again.")
+                        except Exception as  e:
+                            print(f"An error occurred: {e}")    
+            
 #               
 #               'Verläufe ATE_Status_Verlauf und TD_Status_Verlauf befüllen und Rückgabewerte zusammenführen
 #               Call AusgabeVerlauf(wksBsM, strFehlerATEVerlauf, 1)
@@ -734,7 +746,7 @@ class ATEStatus:
         self.blacklist_LAHB = tuple()
 #       
 #       Set wksBlacklist = wbBsM.Sheets(strWKSBlacklist)
-        blacklist_data_frame = self.workbook_BsM.sheets(blacklist_name)
+        blacklist_data_frame = self.workbook_BsM.sheet(blacklist_name)
 #       If Not wksBlacklist Is Nothing Then
         if blacklist_data_frame is not None:
 #           Set rngBlacklist = wksBlacklist.Cells.Find(strAttributBlacklist, lookat:=xlWhole)
@@ -842,7 +854,7 @@ class ATEStatus:
                 #  Security Order seems to be used only if the verification id is stored in self.verification_criterion_list,
                 #  so we can check this before creating the security order 
                 verification_criterion_id = str(self.info_TDAA.columns[TDSafeGuardsAttribute.IncludedIn][row])
-                re.sub(r'[\?r]', '', verification_criterion_id)
+                verification_criterion_id = re.sub(r'[\?r]', '', verification_criterion_id)
                 verification_criterion = self.verification_criteria.get(verification_criterion_id, None)
 #               'Neuen Absicherungsauftrag anlegen
 #               Set absicherungsAuftr = New Absicherungsauftraege
@@ -1479,7 +1491,7 @@ class ATEStatus:
                 self.other_test_environment.append(security_order.testumgebungstyp)
 
 #   Private Sub AusgabeATEStatus(ByVal wbBsM As Workbook, ByRef wksBsM As Worksheet, ByRef strBsMAttribute() As String, ByRef rngBsMAttribute() As Range, ByRef strWeitereTUsAusgabe As String, ByRef strDateinamen() As String, ByVal strProjekt As String)
-    def output_status(self):
+    def output_status(self) -> tuple[dict[str,list[str]],str]:
 #       Dim lngDatensatz As Long                        'Long-Variable für aktuell zu schreibenden Datensatz
 #       Dim varErfassteBsMDatensatzItem As Variant      'Variant für Item im globalen BsM-Datensatz
 #       Dim varErfassteTDAAItem As Variant              'Variant für Item aus den jeweiligen Absicherungsaufträgen
@@ -1843,7 +1855,7 @@ class ATEStatus:
                 if strTDVKAktion != '':
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USE CASE", "USE-CASE")
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USECASE", "USE-CASE")
-                    strTDVKAktion = re.sub('USE( )?CASE', 'USE-CASE',strTDVKAktion.upper())
+                    strTDVKAktion = re.sub(r'USE( )?CASE', 'USE-CASE',strTDVKAktion.upper())
 #                   dblTDVKAnzahlUseCases = (Len(strTDVKAktion) - Len(Replace(UCase(strTDVKAktion), "USE-CASE", ""))) / Len("Use-Case")
                     dblTDVKAnzahlUseCases = (len(strTDVKAktion) - len(re.sub("USE-CASE","", strTDVKAktion)))/ len('Use-Case')
 #                   'Anzahl 1 bei Befüllung ohne Vorkommen der Schlagwörter
@@ -1869,7 +1881,7 @@ class ATEStatus:
                             #implemented in if sentence above this for loop
 #                       Else
 #                           strTDAA = strTDAA & vbCrLf & varErfassteTDAAItem.abs_ID
-                        strTDAA = f"{strTDAA}\n\r{security_order.abs_id}"
+                        strTDAA = f"{strTDAA}{CRLF}{security_order.abs_id}"
 #                       End If
 #                       'Ti-Tu-Kombinationen zusammenführen
 #                       If strTDTiTu = "" Then
@@ -1877,7 +1889,7 @@ class ATEStatus:
                             #implemented in if sentence above this for loop
 #                       Else
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                        strTDTiTu = f'{strTDTiTu}\n\r{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                        strTDTiTu = f'{strTDTiTu}{CRLF}{security_order.testinstanz}: {security_order.testumgebungstyp}'
 #                       End If
 #                       
 #                       'Auswertung ob relevante Testinstanzen abgedeckt sind
@@ -2060,18 +2072,23 @@ class ATEStatus:
 #                                       "Absicherungsaufträge: " & strDateinamen(3) & vbCrLf & "Testfälle: " & strDateinamen(3) & vbCrLf & _
 #                                       "FRU-Timing: " & strDateinamen(5)
 #       wksBsM.Rows(lngDatensatz).EntireRow.Hidden = True
-        self.bsm_output_data = bsm_output_data
-        self.output_workbook.append_worksheet(
-            data_frame=pd.DataFrame(
-                bsm_output_data,
-                dtype=str
-            ),
-            name=worksheet_name,
-        )
+        #self.bsm_output_data = bsm_output_data
+        #self.output_workbook.append_worksheet(
+        #    data_frame=pd.DataFrame(
+        #        bsm_output_data,
+        #        dtype=str
+        #    ),
+        #    name=worksheet_name,
+        #)
+        return bsm_output_data, worksheet_name
 #   End Sub
+
+    def output_worksheets(self):
+        yield self.output_status()
+        yield self.output_status_TD()
 #   
 #   Private Sub AusgabeTDStatus(ByVal wbBsM As Workbook, ByRef wksTD As Worksheet, ByRef strTDAttribute() As String, ByRef rngTDAttribute() As Range, ByRef strDateinamen() As String, ByVal strProjekt As String)
-    def output_status_TD(self):
+    def output_status_TD(self) -> tuple[dict[str,list[str]],str]:
 #       Dim lngDatensatz As Long                        'Long-Variable für aktuell zu schreibenden Datensatz
 #       Dim Verifikationskriterium As Verifikationskriterium    'Verifikationskriterium
 #       Dim varErfassteTDAAItem As Variant              'Variant für Item aus den jeweiligen Absicherungsaufträgen
@@ -2312,16 +2329,16 @@ class ATEStatus:
                 if tdvc_action != '':
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USE CASE", "USE-CASE")
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USECASE", "USE-CASE")
-                    tdvc_action = re.sub('USE( )?CASE', 'USE-CASE', tdvc_action.upper())
+                    tdvc_action = re.sub(r'USE( )?CASE', 'USE-CASE', tdvc_action.upper())
 #                   dblTDVKAnzahlUseCases = (Len(strTDVKAktion) - Len(Replace(UCase(strTDVKAktion), "USE-CASE", ""))) / Len("Use-Case")
-                    use_cases_count = (len(tdvc_action)-len(re.sub('USE-CASE','',tdvc_action))) / len('USE-CASE')
+                    use_cases_count = (len(tdvc_action)-len(re.sub(r'USE-CASE','',tdvc_action))) / len('USE-CASE')
 #                   'Anzahl 1 bei Befüllung ohne Vorkommen der Schlagwörter
 #                   If dblTDVKAnzahlUseCases = 0 Then dblTDVKAnzahlUseCases = 1
                     if use_cases_count == 0:
                         use_cases_count = 1
 #               End If
 #               rngTDAttribute(23).Offset(lngDatensatz, 0).Value = dblTDVKAnzahlUseCases
-                row_data[TDAttribute.TDVCEffortEstimation] = use_cases_count
+                row_data[TDAttribute.TDVCEffortEstimation] = str(use_cases_count)
 #               
 #               'Rücksetzen der Variablen für TU-Abgleich
 #               ReDim intAbgleichTUs(LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1))
@@ -2357,7 +2374,7 @@ class ATEStatus:
                             # implemented in if above for
 #                       Else
 #                           strTDAA = strTDAA & vbCrLf & varErfassteTDAAItem.abs_ID
-                        strTDAA = f"{strTDAA}r\n{security_order.abs_id}"
+                        strTDAA = f"{strTDAA}{CRLF}{security_order.abs_id}"
 #                       End If
 #                       'Ti-Tu-Kombinationen zusammenführen
 #                       If strTDTiTu = "" Then
@@ -2365,7 +2382,7 @@ class ATEStatus:
                             # implemented in if above for
 #                       Else
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                        strTDTiTu = f'{strTDTiTu}r\n{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                        strTDTiTu = f'{strTDTiTu}{CRLF}{security_order.testinstanz}: {security_order.testumgebungstyp}'
 #                       End If
 #
 #       'Abgleich der vorhandenen relevanten Testumgebungen                         
@@ -2446,10 +2463,10 @@ class ATEStatus:
 #                   rngTDAttribute(26).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Temp11_Auswahlfeld)
                     row_data[TDProjectAttribute.Temp11SelectionField] = CRLF.join(verification_criterion.anf_temp11_auswahlfeld)
 #               End If
+                for field, value in row_data.items():
+                    td_output_data[field].append(value)
 #           
 #           End If
-            for field, value in row_data.items():
-                td_output_data[field].append(value)
 #           
 #       Next Verifikationskriterium
 #       
@@ -2481,14 +2498,15 @@ class ATEStatus:
 #                                       "FRU-Timing: " & strDateinamen(5)
 #       wksTD.Rows(lngDatensatz).EntireRow.Hidden = True
         
-        self.td_output_data = td_output_data
-        self.output_workbook.append_worksheet(
-            data_frame=pd.DataFrame(
-                td_output_data,
-                dtype=str,
-            ),
-            name=worksheet_name,
-        )
+        #self.td_output_data = td_output_data
+        #self.output_workbook.append_worksheet(
+        #    data_frame=pd.DataFrame(
+        #        td_output_data,
+        #        dtype=str,
+        #    ),
+        #    name=worksheet_name,
+        #)
+        return td_output_data, worksheet_name
 #       End Sub
 #
         ###Moved to test_environment_evaluation ---------------------------------       

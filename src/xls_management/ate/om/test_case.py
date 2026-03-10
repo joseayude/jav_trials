@@ -42,7 +42,7 @@ class TestCase:
 #       Set testfall = New Testfaelle
 #       'Testfall-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #       testfall.TF_ID = Replace(Replace(rngTFAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-        self.id = re.sub('[\?r]', '', str(columns['ID'][row]))
+        self.id = re.sub(r'[\?r]', '', str(columns['ID'][row]))
 #       'Status Testfall einlesen
 #       testfall.TF_Status = rngTFAttribute(2).Offset(lngZeile, 0).Value
         self.status = str(columns['Status'][row])
@@ -77,7 +77,7 @@ class TestCase:
 #       'Alle über das Testdesign mit dem aktuellen Testfall verknüpften Anforderungs-IDs erfassen
 #       'ID des übergeordneten Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #       testfall.TF_VK_ID = Replace(Replace(rngTFAttribute(5).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-        self.vk_id = re.sub('[\?r]','',str(columns['Basierend auf Testdesign'][row]))
+        self.vk_id = re.sub(r'[\?r]','',str(columns['Basierend auf Testdesign'][row]))
 #       'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
 #       Set Verifikationskriterium = New Verifikationskriterium
 #       Set Verifikationskriterium = FindeVK(verifikationKritList, testfall.TF_VK_ID)

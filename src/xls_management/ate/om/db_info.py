@@ -1,6 +1,6 @@
 from pathlib import Path
 from xls_management.tui.file_picker import path_from_file_picker
-from xls_management.workbook import Workbook
+from xls_management.xlsx.workbook import Workbook
 import pandas as pd
 
 

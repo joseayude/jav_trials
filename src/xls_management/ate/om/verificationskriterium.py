@@ -39,7 +39,7 @@ class Verificationskriterium:
 #               strVerifikationsID = Replace(Replace(rngTDVKAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
 #               'ID des Verifikationsauftrags erfassen
 #               verifikationKrit.VK_ID = strVerifikationsID
-                self.vk_id = re.sub('[\?r]', '',str(columns[VC.ID][row]))
+                self.vk_id = re.sub(r'[\?r]', '',str(columns[VC.ID][row]))
 #               'Anforderungs-IDs einlesen
 #               anfIDs = rngTDVKAttribute(2).Offset(lngZeile, 0).Value
                 anf_ids_str = str(columns[VC.RequirementBased][row])

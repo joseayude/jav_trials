@@ -2,7 +2,8 @@ from pathlib import Path
 from shutil import copy
 import pandas as pd
 
-from xls_management.workbook import Workbook
+from xls_management import HOMEPATH
+from xls_management.xlsx.workbook import Workbook
 from test import working_path
 
 def test_workbook_sheets():
@@ -50,10 +51,62 @@ def test_append_sheet(tmp_path):
     #with pd.ExcelWriter(dest, engine="openpyxl", mode="a") as writer:
     #    df.to_excel(writer, sheet_name="NewSheet", index=False)
     workbook = Workbook(file_path = dest)
-    workbook.append_worksheet(df, "NewSheet")
+    with workbook.writer() as writer:
+        workbook.append_worksheet(writer, df, "NewSheet")
 
     # verify via Workbook wrapper
     w: Workbook = Workbook(dest)
     assert "NewSheet" in w.sheet_names()
 
+    df2 = pd.DataFrame({"id": [1, 2], "values": ["Prueba\r\nPrueba", "pastel\r\npastel\r\npastel"]})
+
     # Cleanup is handled by tmp_path fixture, so no need to delete the file manually
+
+def test_append_sheet_with_crlf(tmp_path):
+    """Copy example01.xlsx to a temp location, append a sheet using pandas, and verify it appears."""
+    src: Path = working_path / "test/data/example01.xlsx"
+    dest: Path = tmp_path / "example01.xlsx"
+    copy(src, dest)
+
+    # create a simple DataFrame and append as a new sheet
+    df = pd.DataFrame({"id": [1, 2], "values": ["Acuna\r\nMatata", "Lion\r\nking\r\nlives"]})
+    #with pd.ExcelWriter(dest, engine="openpyxl", mode="a") as writer:
+    #    df.to_excel(writer, sheet_name="NewSheet", index=False)
+    w = Workbook(file_path = dest)
+    with w.writer() as writer:
+        w.append_worksheet(writer, df, "NewSheet")
+
+    # verify via Workbook wrapper
+    assert "NewSheet" in w.sheet_names()
+
+    df = w.sheet("NewSheet")
+    assert df['values'][0] == 'Acuna\r\nMatata'
+
+    # Cleanup is handled by tmp_path fixture, so no need to delete the file manually
+
+def test_excel_py_to_csv():
+    workbook = Workbook(f"{HOMEPATH}\\vw\\data\\output.xlsx")
+    workbook.to_csv(
+        csv_path='{workdir}/csv/py/{sheet_name}.csv',
+        sheet_name='TD_Status_011_2026',
+        slice_size = 100
+    )
+    assert Path(f"{HOMEPATH}\\vw\\data\\csv\\py\\TD_Status_011_2026_000.csv").exists()
+    assert Path(f"{HOMEPATH}\\vw\\data\\csv\\py\\TD_Status_011_2026_001.csv").exists()
+    assert Path(f"{HOMEPATH}\\vw\\data\\csv\\py\\TD_Status_011_2026_041.csv").exists()
+
+def test_excel_vba_to_csv():
+    vba_workbook=Workbook(f"{HOMEPATH}\\vw\\data\\trial\\output_Status.xlsx")
+    vba_workbook.to_csv(
+        skiprows=1,
+        csv_path=f'{HOMEPATH}\\vw\\data\\csv{'/vba/{sheet_name}.csv'}',
+        sheet_name='TD_Status_011_2026',
+        slice_size = 100
+    )
+    vba_workbook.to_csv(
+        skiprows=1,
+        csv_path=f'{HOMEPATH}\\vw\\data\\csv{'/vba/{sheet_name}.csv'}',
+        sheet_name='TD_Status_011_2026',
+        slice_size = 100
+    )
+   
