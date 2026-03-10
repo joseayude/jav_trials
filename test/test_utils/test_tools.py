@@ -1,6 +1,12 @@
 import re
 
-from xls_management.utils.tools import all_in_sequence, list_from_comma_separated_str
+from xls_management import HOMEPATH
+from xls_management.utils.tools import (
+    all_in_sequence,
+    get_slices,
+    list_from_comma_separated_str,
+    col_name_from,
+)
 
 
 def test_all_in_sequence():
@@ -26,13 +32,17 @@ def test_get_comma_separated_list():
     assert list_from_comma_separated_str('one,\t\t\t\t?two ,th ree\n') == ['one', 'two', 'three']
 
 def test_re_sub():
-    assert re.sub('[\?r]','','1234') == '1234'
-    assert re.sub('[\?r]','','1234?') == '1234'
-    assert re.sub('[\?r]','','r1234') == '1234'
+    assert re.sub(r'[\?r]','','1234') == '1234'
+    assert re.sub(r'[\?r]','','1234?') == '1234'
+    assert re.sub(r'[\?r]','','r1234') == '1234'
+    assert re.sub(r'[\?r]','','1234r\r\n5678r\r\n5679r') == '1234\r\n5678\r\n5679'
+    assert re.sub(r'[\?r]','','1234?\r\n5678?\r\n5679r') == '1234\r\n5678\r\n5679'
 
-    assert re.sub('USE( )?CASE', 'USE-CASE', 'MY USE CASE') == 'MY USE-CASE'
-    assert re.sub('USE( )?CASE', 'USE-CASE', 'MY USECASE') == 'MY USE-CASE'
-    assert re.sub('USE( )?CASE', 'USE-CASE', 'MY USE-CASE') == 'MY USE-CASE'
+    assert re.sub(r'USE( )?CASE', 'USE-CASE', 'MY USE CASE') == 'MY USE-CASE'
+    assert re.sub(r'USE( )?CASE', 'USE-CASE', 'MY USECASE') == 'MY USE-CASE'
+    assert re.sub(r'USE( )?CASE', 'USE-CASE', 'MY USE-CASE') == 'MY USE-CASE'
+
+    assert re.sub(r'\r',r'\\r', '\r') == '\\r'
 
 def test_dict_iterator():
     my_dict = {'a':'uno','b':'dos', 'c':'tres'}
@@ -54,4 +64,22 @@ def test_dict_iterator():
     assert next(my_iter) == 'b'
     for v in my_iter:
         assert v == 'c'
-        
+
+def test_col_name_from():
+    assert col_name_from(0) == 'A'
+    assert col_name_from(25) == 'Z'
+    assert col_name_from(6) == 'G'
+    assert col_name_from(26) == 'AA'
+    assert col_name_from(51) == 'AZ'
+    assert col_name_from(52) == 'BA'
+    assert col_name_from(77) == 'BZ'
+    assert col_name_from(78) == 'CA'
+    assert col_name_from(900) == 'AHQ'
+
+def test_get_slices():
+    assert list(get_slices(0,0,5)) == []
+    assert list(get_slices(0,1,5)) == [(0,0,1)]
+    assert list(get_slices(0,4,5)) == [(0,0,4)]
+    assert list(get_slices(0,5,5)) == [(0,0,5)]
+    assert list(get_slices(0,10,5)) == [(0,0,5), (1,5,10)]
+    assert list(get_slices(0,11,5)) == [(0,0,5), (1,5,10), (2,10,11)]

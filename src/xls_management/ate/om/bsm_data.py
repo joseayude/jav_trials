@@ -41,7 +41,7 @@ class BSMData:
         self.avw_implementer = str(columns[RequirementAttribute.Implementer][row])
 #       'Dokument-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #       BSMDatensatz.AVWDokumentID = Replace(Replace(CStr(rngAVWAttribute(2).Offset(lngZeile, 0).Value), "?", ""), "r", "")
-        self.avw_dokument_id = re.sub('[\?r]','',str(columns[RequirementAttribute.DocumentID][row]))
+        self.avw_dokument_id = re.sub(r'[\?r]','',str(columns[RequirementAttribute.DocumentID][row]))
 #       'Dokument-Name einlesen
 #       BSMDatensatz.AVWDokumentName = CStr(rngAVWAttribute(19).Offset(lngZeile, 0).Value)
         self.avw_dokument_name = str(columns[RequirementAttribute.Document][row])
@@ -50,7 +50,7 @@ class BSMData:
         self.avw_mv = str(columns[RequirementAttribute.MV][row])
 #       'Anforderungs-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #       BSMDatensatz.AVWID = Replace(Replace(CStr(rngAVWAttribute(1).Offset(lngZeile, 0).Value), "?", ""), "r", "")
-        self.avw_id = re.sub('[\?r]','',str(columns[RequirementAttribute.ID][row]))
+        self.avw_id = re.sub(r'[\?r]','',str(columns[RequirementAttribute.ID][row]))
 #       'Status einlesen
 #       BSMDatensatz.AVWStatus = CStr(rngAVWAttribute(6).Offset(lngZeile, 0).Value)
         self.avw_status = str(columns[RequirementAttribute.Status][row])
@@ -179,86 +179,86 @@ class BSMData:
 
     def add_verification_criterion(self, verification_criterion:Verificationskriterium):
 #       'VK-ID aufnehmen
-#       BSMDatensatz.Verifikationskriterium.Add Item:=vabsm_dataset.add_verification_criterion(verification_criterion) 
+#       BSMDatensatz.Verifikationskriterium.Add Item:=varErfassteVKItem 
         if verification_criterion not in self.verifications_criteria:
             self.verifications_criteria.append(verification_criterion)
 #       'Geplante I-Stufe für Verifikationskritierum erfassen
 #       If BSMDatensatz.IStufe <> "" Then
-        if self.i_stufe != '' and self.i_stufe not in verification_criterion.anf_i_stufen:
+        if self.i_stufe != '' and self.i_stufe not in verification_criterion.requirement_i_level:
 #           varErfassteVKItem.anf_IStufen.Add Item:=BSMDatensatz.IStufe
-            verification_criterion.anf_i_stufen.append(self.i_stufe)
+            verification_criterion.requirement_i_level.append(self.i_stufe)
 #       End If
 #       'Umsetzer für Verifikationskritierum erfassen
 #       If BSMDatensatz.AVWUmsetzer <> "" Then
-        if self.avw_implementer != '' and self.avw_implementer not in verification_criterion.anf_umsetzer:
+        if self.avw_implementer != '' and self.avw_implementer not in verification_criterion.requirement_implementer:
 #           varErfassteVKItem.anf_Umsetzer.Add Item:=BSMDatensatz.AVWUmsetzer
-            verification_criterion.anf_umsetzer.append(self.avw_implementer)
+            verification_criterion.requirement_implementer.append(self.avw_implementer)
 #       End If
 #       'BsM-Relevanz für Verifikationskritierum erfassen
 #       If BSMDatensatz.BSMRelevanz <> "" Then
-        if self.bsm_relevanz != '' and self.bsm_relevanz not in verification_criterion.anf_bsm_relevanz:    
+        if self.bsm_relevanz != '' and self.bsm_relevanz not in verification_criterion.requirement_bsm_relevance:    
 #           varErfassteVKItem.anf_BsMRelevanz.Add Item:=BSMDatensatz.BSMRelevanz
-            verification_criterion.anf_bsm_relevanz.append(self.bsm_relevanz)
+            verification_criterion.requirement_bsm_relevance.append(self.bsm_relevanz)
 #       End If
 #       'ASIL für Verifikationskritierum erfassen
 #       If BSMDatensatz.AVWASIL <> "" Then
-        if self.avw_asil != '' and self.avw_asil not in verification_criterion.anf_asil:
+        if self.avw_asil != '' and self.avw_asil not in verification_criterion.requirement_asil:
 #           varErfassteVKItem.anf_ASIL.Add Item:=BSMDatensatz.AVWASIL
-            verification_criterion.anf_asil.append(self.avw_asil)
+            verification_criterion.requirement_asil.append(self.avw_asil)
 #       End If
 #       'Feature für Verifikationskritierum erfassen
 #       If BSMDatensatz.AVWFeature <> "" Then
-        if self.avw_feature != '' and self.avw_feature not in verification_criterion.anf_feature:
+        if self.avw_feature != '' and self.avw_feature not in verification_criterion.requirement_feature:
 #           varErfassteVKItem.anf_Feature.Add Item:=BSMDatensatz.AVWFeature
-            verification_criterion.anf_feature.append(self.avw_feature)
+            verification_criterion.requirement_feature.append(self.avw_feature)
 #       End If
 #       'Reifegrad für Verifikationskritierum erfassen
 #       If BSMDatensatz.AVWReifegrad <> "" Then
-        if self.avw_reifegrad != '' and self.avw_reifegrad not in verification_criterion.anf_reifegrad:
+        if self.avw_reifegrad != '' and self.avw_reifegrad not in verification_criterion.requirement_maturity_level:
 #           varErfassteVKItem.anf_Reifegrad.Add Item:=BSMDatensatz.AVWReifegrad
-            verification_criterion.anf_reifegrad.append(self.avw_reifegrad)
+            verification_criterion.requirement_maturity_level.append(self.avw_reifegrad)
 #       End If
 #       'Modulverantwortliche für Verifikationskritierum erfassen
 #       If BSMDatensatz.AVWMV <> "" Then
-        if self.avw_mv != '' and self.avw_mv not in verification_criterion.anf_mv:
+        if self.avw_mv != '' and self.avw_mv not in verification_criterion.requirement_mv:
 #           varErfassteVKItem.anf_MV.Add Item:=BSMDatensatz.AVWMV
-            verification_criterion.anf_mv.append(self.avw_mv)
+            verification_criterion.requirement_mv.append(self.avw_mv)
 #       End If
 #       'LAH-ID für Verifikationskritierum erfassen
 #       If BSMDatensatz.AVWDokumentID <> "" Then
-        if self.avw_dokument_id != '' and self.avw_dokument_id not in verification_criterion.anf_lah_id:
+        if self.avw_dokument_id != '' and self.avw_dokument_id not in verification_criterion.requirement_lah_id:
 #           varErfassteVKItem.anf_LAHID.Add Item:=BSMDatensatz.AVWDokumentID
-            verification_criterion.anf_lah_id.append(self.avw_dokument_id)
+            verification_criterion.requirement_lah_id.append(self.avw_dokument_id)
 #       End If
 #       'LAH-Namen für Verifikationskritierum erfassen
 #       If BSMDatensatz.AVWDokumentName <> "" Then
-        if self.avw_dokument_name != '' and self.avw_dokument_name not in verification_criterion.anf_lah_namen:
+        if self.avw_dokument_name != '' and self.avw_dokument_name not in verification_criterion.requirement_lah_name:
 #           varErfassteVKItem.addLAHName (BSMDatensatz.AVWDokumentName)
-            verification_criterion.anf_lah_namen.append(self.avw_dokument_name)
+            verification_criterion.add_lah_name(self.avw_dokument_name)
 #       End If
 #       'Cluster Testing für Verifikationskriterium erfassen
 #       If BSMDatensatz.ClusterTesting <> "" Then
-        if self.cluster_testing != '' and self.cluster_testing not in verification_criterion.anf_cluster_testing:
+        if self.cluster_testing != '' and self.cluster_testing not in verification_criterion.requirement_cluster_testing:
 #           varErfassteVKItem.anf_ClusterTesting.Add Item:=BSMDatensatz.ClusterTesting
-            verification_criterion.anf_cluster_testing.append(self.cluster_testing)
+            verification_criterion.requirement_cluster_testing.append(self.cluster_testing)
 #       End If
 #       'Anforderungsverantwortliche für Verifikationskriterium erfassen
 #       If BSMDatensatz.AVWAnforderungsverantwortliche <> "" Then
         if (
             self.avw_anforderungsverantwortliche != '' and
-            self.avw_anforderungsverantwortliche not in verification_criterion.anf_anforderungsverantwortliche
+            self.avw_anforderungsverantwortliche not in verification_criterion.requirement_owner
         ):   
 #           varErfassteVKItem.anf_Anforderungsverantwortliche.Add Item:=BSMDatensatz.AVWAnforderungsverantwortliche
-            verification_criterion.anf_anforderungsverantwortliche.append(self.avw_anforderungsverantwortliche)
+            verification_criterion.requirement_owner.append(self.avw_anforderungsverantwortliche)
 #       End If
 #       'Temp11_Auswahlfeld für Verifikationskriterium erfassen
 #       If BSMDatensatz.AVWTemp11_Auswahlfeld <> "" Then
         if (
             self.is_specific and self.avw_temp11_auswahlfeld != '' and 
-            self.avw_temp11_auswahlfeld not in verification_criterion.anf_temp11_auswahlfeld
+            self.avw_temp11_auswahlfeld not in verification_criterion.requirement_temp11_selection_field
         ):
 #           varErfassteVKItem.anf_Temp11_Auswahlfeld.Add Item:=BSMDatensatz.AVWTemp11_Auswahlfeld
-            verification_criterion.anf_temp11_auswahlfeld.append(self.avw_temp11_auswahlfeld)
+            verification_criterion.requirement_temp11_selection_field.append(self.avw_temp11_auswahlfeld)
 #       End If
 #       
 #       'Innere Schleife beenden, da es zu jeder Anforderung nur ein Verifikationskriterium gibt

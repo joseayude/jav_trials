@@ -1,5 +1,4 @@
 
-
 import re
 
 
@@ -25,7 +24,7 @@ def list_from_comma_separated_str(comma_separated_string:str) -> list:
     :return: list of cleaned values from the input string.
     :rtype: list
     """
-    cleaned_string = re.sub('[\?\s]','',comma_separated_string)
+    cleaned_string = re.sub(r'[\?\s]','',comma_separated_string)
     return cleaned_string.split(',')
 #       Dim idCollection As Collection
 #       Dim subStrings() As String
@@ -40,3 +39,21 @@ def list_from_comma_separated_str(comma_separated_string:str) -> list:
 #       Next
 #       Set EinlesenGetrennteWerteKomma = idCollection
 #       End Function
+
+def col_name_from(index:int):
+    col_name = ''
+    while index >= 0:
+        modulus = index % 26
+        col_name = f'{chr(modulus+65)}{col_name}'
+        index = index // 26 -1
+    return col_name
+
+def get_slices(start, top, size):
+    i = 0
+    first = start
+    for second in range(first+size,top,size):
+        yield i, first, second
+        first = second
+        i += 1
+    if first < top:
+        yield i, first, top

@@ -1,6 +1,7 @@
 import re
 import pandas as pd
 
+from xls_management.ate.data_de import TestCaseAttribute
 from xls_management.ate.om.verificationskriterium import Verificationskriterium
 from xls_management.utils.tools import list_from_comma_separated_str
 
@@ -23,13 +24,6 @@ class TestCase:
         row:int,
         verification_criteria: dict[str,Verificationskriterium],
     ):
-        #self.id = id
-        #self.name = name
-        #self.status = status
-        #self.testinstanz = testinstanz
-        #self.testumgebungstyp = testumgebungstyp
-        #self.vk_id = vk_id
-        #self.anf_ids = anf_ids
         ### moved from tracking
 #       'TFs:   #1: ID,
                 #2: Status, 
@@ -42,22 +36,22 @@ class TestCase:
 #       Set testfall = New Testfaelle
 #       'Testfall-ID einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #       testfall.TF_ID = Replace(Replace(rngTFAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-        self.id = re.sub('[\?r]', '', str(columns['ID'][row]))
+        self.id = re.sub(r'[\?r]', '', str(columns['ID'][row]))
 #       'Status Testfall einlesen
 #       testfall.TF_Status = rngTFAttribute(2).Offset(lngZeile, 0).Value
-        self.status = str(columns['Status'][row])
+        self.status = str(columns[TestCaseAttribute.Status][row])
 #       'Testfall-Name einlesen
 #       testfall.TF_Name = rngTFAttribute(3).Offset(lngZeile, 0).Value
-        self.name = str(columns['Testfallname'][row])
+        self.name = str(columns[TestCaseAttribute.TestCaseName][row])
 #       'Testinstanz einlesen
 #       testfall.TF_Testinstanz = rngTFAttribute(7).Offset(lngZeile, 0).Value
-        self.testinstanz =  str(columns['Testinstanz'][row])
+        self.test_instance =  str(columns[TestCaseAttribute.TestInstance][row])
 #       'Testumgebungstyp einlesen
 #       testfall.testumgebungstyp = Replace(rngTFAttribute(4).Offset(lngZeile, 0).Value, "Testumgebungstyp: ", "")
-        self.testumgebungstyp =  re.sub(
+        self.test_environment_type =  re.sub(
             'Testumgebungstyp: ',
             '',
-            str(columns['Sonstige-Varianten'][row])
+            str(columns[TestCaseAttribute.OtherVariants][row])
         )
         ###TODO: check that Testumgebungstyp is the right column name
 #       
@@ -65,19 +59,19 @@ class TestCase:
 #       'direkte Testfälle nicht berücksichtigen!
 #       'Anforderungs-IDs einlesen
 #       'anfIDs = rngTFAttribute(6).Offset(lngZeile, 0).Value
-        requirement_ids = str(columns['verifiziert'][row])
+        requirement_ids = str(columns[TestCaseAttribute.Verified][row])
 #       'Anforderungs-IDs nach Kommas trennen
 #       'Set idList = EinlesenGetrennteWerteKomma(anfIDs)
 #       'Anforderungs-IDs übernehmen
 #       'Set testfall.TF_anfIDs = idList
-        self.anf_ids = list_from_comma_separated_str(requirement_ids)
+        self.requirement_ids = list_from_comma_separated_str(requirement_ids)
 #       'Neue Sammlung für Anforderungs-IDs anlegen - Notwendig, wenn Liste der direkten Testfälle nicht übernommen wird
 #       Set testfall.TF_anfIDs = New Collection
 #       
 #       'Alle über das Testdesign mit dem aktuellen Testfall verknüpften Anforderungs-IDs erfassen
 #       'ID des übergeordneten Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
 #       testfall.TF_VK_ID = Replace(Replace(rngTFAttribute(5).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-        self.vk_id = re.sub('[\?r]','',str(columns['Basierend auf Testdesign'][row]))
+        self.vk_id = re.sub(r'[\?r]','',str(columns[TestCaseAttribute.TestDesignBased][row]))
 #       'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
 #       Set Verifikationskriterium = New Verifikationskriterium
 #       Set Verifikationskriterium = FindeVK(verifikationKritList, testfall.TF_VK_ID)
@@ -86,7 +80,7 @@ class TestCase:
         if verification_criterion is not None:
 #           'Anforderungs-ID aufnehmen
 #           For Each varAnfID In Verifikationskriterium.anf_ids
-            for requirement_id in verification_criterion.anf_ids:
+            for requirement_id in verification_criterion.requirement_ids:
 #               testfall.addElementID (varAnfID)
                 self.add_element_id(requirement_id)
 #           Next varAnfID
@@ -98,7 +92,7 @@ class TestCase:
 
 #   
 #   Sub addElementID(ByVal elemID2 As String)
-    def add_element_id(self, anf_id:str):
+    def add_element_id(self, requirement_id:str):
 #       Dim elemID1 As Variant
 #       Dim isContained As Boolean
 #       
@@ -112,6 +106,6 @@ class TestCase:
 #       If (isContained = False) Then
 #           TF_anfIDs.Add elemID2
 #       End If
-        if not anf_id in self.anf_ids:
-            self.anf_ids.append(anf_id)
+        if not requirement_id in self.requirement_ids:
+            self.requirement_ids.append(requirement_id)
 #   End Sub

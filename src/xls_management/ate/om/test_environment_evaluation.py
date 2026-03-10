@@ -48,14 +48,16 @@ class TestEnvironmentEvaluations:
 #       
 #       For i = LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1)
         for index, test_environment_type in enumerate(self.test_environment_types):
-            for evaluation_index in TestEnvironmentEvaluations.indexes:
-                if self.intAbgleichTUs[index] == evaluation_index:
-                    self.evaluations[evaluation_index].value += 1
-                    if self.evaluations[evaluation_index].test_environments == '':
-                        self.evaluations[evaluation_index].test_environments = test_environment_type
-                    else:
-                        self.evaluations[evaluation_index].test_environments += f', {test_environment_type}'
-                    break
+            te_index = self.intAbgleichTUs[index]
+            if te_index in TestEnvironmentEvaluations.indexes:
+            #for evaluation_index in TestEnvironmentEvaluations.indexes:
+            #    if self.intAbgleichTUs[index] == evaluation_index:
+                self.evaluations[te_index].value += 1
+                if self.evaluations[te_index].test_environments == '':
+                    self.evaluations[te_index].test_environments = test_environment_type
+                else:
+                    self.evaluations[te_index].test_environments += f', {test_environment_type}'
+            #        break
 #           If intAbgleichTUs(i) = 1 Then
 #               '#TF nicht vorhanden, VK fachlich abgestimmt
 #                   intAuswertungTUs(1) = intAuswertungTUs(1) + 1
@@ -169,11 +171,11 @@ class TestEnvironmentEvaluations:
             if(
                 self.evaluations[11].value == 0 and 
                 self.evaluations[21].value == 0 and 
-                self.evaluations[11].value == 0
+                self.evaluations[31].value == 0
             ):
 #               'Keine relevanten VK-TUs vorhanden
 #               strAusgabeAuswertungTUs = "Keine relevanten Testumgebungstypen vorhanden"
-                self.str_output = 'Keine relevanten Testumgebungstypen vorhande'
+                self.str_output = 'Keine relevanten Testumgebungstypen vorhanden'
 #               intAusgabeAuswertungTUs = 1
                 self.int_output = 1
 #           End If
@@ -182,12 +184,16 @@ class TestEnvironmentEvaluations:
         else: # self.evaluations[1].value > 0
 #           'Relevante VK-TUs ohne TF vorhanden
 #           If intAuswertungTUs(11) > 0 Then
+            if self.evaluations[11].value > 0:
 #               'Einige relevanten VK-TUs mit TF (operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen teilweise abgedeckt"
+                self.str_output = 'Relevante Testumgebungstypen teilweise abgedeckt'
 #               'strAusgabeAuswertungTUsDetails = "Relevante Testumgebungstypen teilweise mit operativen Testfällen abgedeckt"
 #               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig"
+                self.output_details = 'Testfälle unvollständig'
 #               'Feldfarbe gelb
 #               intAusgabeAuswertungTUs = 2
+                self.int_output = 2
 #           End If
 #           If intAuswertungTUs(21) > 0 Then
             if self.evaluations[21].value > 0:
@@ -202,6 +208,7 @@ class TestEnvironmentEvaluations:
                 self.int_output = 2
 #           End If
 #           If intAuswertungTUs(31) > 0 Then
+            if self.evaluations[31].value > 0:
 #               'Einige relevanten VK-TUs mit TF (teilweise operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen teilweise abgedeckt"
                 self.str_output = 'Relevante Testumgebungstypen teilweise abgedeckt'
@@ -216,7 +223,7 @@ class TestEnvironmentEvaluations:
             if(
                 self.evaluations[11].value == 0 and 
                 self.evaluations[21].value == 0 and 
-                self.evaluations[11].value == 0
+                self.evaluations[31].value == 0
             ):
 #               'Keine relevanten VK-TUs abgedeckt
 #               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen nicht abgedeckt"

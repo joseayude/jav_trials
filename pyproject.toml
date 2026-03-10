@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-license = { file = "LICENSE"}
+license-files = ["LICENSE.txt"]
 dependencies = [
     "pandas",
     "xlsxwriter",

@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from pathlib import Path
 import re
 from itertools import islice
 
@@ -35,9 +36,9 @@ from xls_management.utils.tools import list_from_comma_separated_str
 
 from importlib.metadata import version
 
-from xls_management.workbook import Workbook
+from xls_management.xlsx.workbook import Workbook
 
-CRLF ='\r\n'
+CRLF ='_x000D_\n'
 
 #Option Explicit
 #
@@ -52,7 +53,7 @@ class ATEStatus:
         # set_signatures
         today = date.today()
         self.week_number = int(today.strftime('%W')) + 1
-        self.date_signature = f"{today.year}/{self.week_number:03d}"
+        self.date_signature = f"{today.year}/{self.week_number:02d}"
         self.date_suffix = f"{self.week_number:03d}_{today.year}"
 
         self.config=ATEConfig()
@@ -133,10 +134,10 @@ class ATEStatus:
         file_path_BsM:str|None = self.config.get('workbook_path_BsM')
         assert file_path_BsM is not None
         self.workbook_BsM = Workbook(file_path=file_path_BsM)
-        output_path = self.workbook_BsM.file_path.parent / "output.xlsx"
-        self.output_workbook = Workbook(output_path)
+        #self.output_workbook = Workbook(output_path)
+    
 
-    def perform_status(self):
+    def perform_status(self, output_path:Path|None=None):
 #       'Allgemein
 #       Dim strFehlerGesamt As String               'String für Gesamtfehlerausgabe
 #       Dim strWeitereTUsAusgabe As String          'String für Ausgabe weiterer Testumgebungstypen
@@ -221,13 +222,26 @@ class ATEStatus:
                 self.read_requirement_raw_data()
 #               'Ausgabe ATE-Status
 #               Call AusgabeATEStatus(wbBsM, wksBsM, strBsMAttribute, rngBsMAttribute, strWeitereTUsAusgabe, strDateinamen, strProjekt)
-            self.output_status()
 #               'Ausgabe TD-Status
 #               Call AusgabeTDStatus(wbBsM, wksTD, strTDAttribute, rngTDAttribute, strDateinamen, strProjekt)
-            self.output_status_TD()
 #               'Geöffnete Dateien schliessen
 #               Call SchliessenWb(wbBsM, wbAVW, wbAVWMaster, wbTDVK, wbTDAA, wbTF, wbFRUTiming)
-            self.close_workbooks()
+                if output_path is None:
+                    output_path = self.workbook_BsM.file_path.parent / "output.xlsx"
+                wb = Workbook(output_path)
+                with wb.writer() as writer:
+                    for row_data_set, name in self.output_worksheets():
+                        try:
+                            df:pd.DataFrame = pd.DataFrame(
+                                row_data_set,
+                                dtype=str
+                            )
+                            wb.append_worksheet(writer, df, name)
+                        except PermissionError:
+                            print("Error: The file is open in another program. Please close it and try again.")
+                        except Exception as  e:
+                            print(f"An error occurred: {e}")    
+            
 #               
 #               'Verläufe ATE_Status_Verlauf und TD_Status_Verlauf befüllen und Rückgabewerte zusammenführen
 #               Call AusgabeVerlauf(wksBsM, strFehlerATEVerlauf, 1)
@@ -734,7 +748,7 @@ class ATEStatus:
         self.blacklist_LAHB = tuple()
 #       
 #       Set wksBlacklist = wbBsM.Sheets(strWKSBlacklist)
-        blacklist_data_frame = self.workbook_BsM.sheets(blacklist_name)
+        blacklist_data_frame = self.workbook_BsM.sheet(blacklist_name)
 #       If Not wksBlacklist Is Nothing Then
         if blacklist_data_frame is not None:
 #           Set rngBlacklist = wksBlacklist.Cells.Find(strAttributBlacklist, lookat:=xlWhole)
@@ -808,14 +822,14 @@ class ATEStatus:
 #       For lngZeile = 1 To wksTDVK.UsedRange.Rows.Count - rngTDVKAttribute(1).Row
         for row in range(0, len(self.info_TDVK.columns)):
 #       '    If rngTDVKAttribute(3).Offset(lngZeile, 0).Value = "Fachlich abgestimmt" Then
-             if self.info_TDVK.columns[TDVCAttribute.Status][row] == 'Fachlich abgestimmt':
+        #     if self.info_TDVK.columns[TDVCAttribute.Status][row] == 'Fachlich abgestimmt':
 #               'Neues Verifikationskriterium anlegen
 #               Set verifikationKrit = New Verifikationskriterium
-                verification_criterion = Verificationskriterium(self.info_TDVK.columns, row)
+            verification_criterion = Verificationskriterium(self.info_TDVK.columns, row)
                 # initialization moved to Verificationskriterium.__init__
 #               'Erfasstes Verifikationskriterium in globaler Verifikationskriterien-Liste hinzufügen
 #               verifikationKritList.Add Item:=verifikationKrit, Key:=verifikationKrit.VK_ID
-                self.verification_criteria[verification_criterion.vk_id] = verification_criterion
+            self.verification_criteria[verification_criterion.vk_id] = verification_criterion
 #       '    End If
 #           'Fortschritt anzeigen
 #           If lngZeile Mod 100 = 0 Then
@@ -840,25 +854,19 @@ class ATEStatus:
 #           If rngTDAAAttribute(3).Offset(lngZeile, 0).Value = "Fachlich abgestimmt" Or rngTDAAAttribute(3).Offset(lngZeile, 0).Value = "In Review" Or rngTDAAAttribute(3).Offset(lngZeile, 0).Value = "In Bearbeitung" Then
             if self.info_TDAA.columns[TDSafeGuardsAttribute.Status][row] in ['Fachlich abgestimmt', 'In Review', 'In Bearbeitung']:
                 #  Security Order seems to be used only if the verification id is stored in self.verification_criterion_list,
-                #  so we can check this before creating the security order 
+                #  so we can check this before creating the security order
+                # moved from above ------------------------
+#               'ID des übergeordneten Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
+#               strVerifikationsID = Replace(Replace(rngTDAAAttribute(2).Offset(lngZeile, 0).Value, "?", ""), "r", "")
                 verification_criterion_id = str(self.info_TDAA.columns[TDSafeGuardsAttribute.IncludedIn][row])
-                re.sub(r'[\?r]', '', verification_criterion_id)
+                verification_criterion_id = re.sub(r'[\?r]', '', verification_criterion_id)
+                #-------------------------------------------
                 verification_criterion = self.verification_criteria.get(verification_criterion_id, None)
 #               'Neuen Absicherungsauftrag anlegen
 #               Set absicherungsAuftr = New Absicherungsauftraege
                 security_order:Absicherungsauftrag = Absicherungsauftrag(self.info_TDAA.columns, row)
                 # initialization moved to Absicherungsauftrag.__init__
-#               'Testinstanz einlesen
-#               absicherungsAuftr.testinstanz = rngTDAAAttribute(4).Offset(lngZeile, 0).Value
-#               'Testumgebung einlesen
-#               absicherungsAuftr.Testumgebungstyp = Replace(rngTDAAAttribute(5).Offset(lngZeile, 0).Value, "Testumgebungstyp: ", "")
-#               'Status des Absicherungsauftrages einlesen
-#               absicherungsAuftr.abs_status = rngTDAAAttribute(3).Offset(lngZeile, 0).Value
-#               'ID des übergeordneten Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#               strVerifikationsID = Replace(Replace(rngTDAAAttribute(2).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-#               'ID des Absicherungsauftrages einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#               absicherungsAuftr.abs_ID = Replace(Replace(rngTDAAAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-#                   
+
 #               'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
 #               Set Verifikationskriterium = New Verifikationskriterium
 #               Set Verifikationskriterium = FindeVK(verifikationKritList, strVerifikationsID)
@@ -893,19 +901,19 @@ class ATEStatus:
 #       For lngZeile = 1 To wksTF.UsedRange.Rows.Count - rngTFAttribute(1).Row
         for row in range(0,len(self.info_TF.columns)):
 #       '    If rngTFAttribute(2).Offset(lngZeile, 0).Value = "Operativ" Then
-            if self.info_TF.columns[TestCaseAttribute.Status][row] == 'Operativ':
+        #    if self.info_TF.columns[TestCaseAttribute.Status][row] == 'Operativ':
 #               'Neuen Testfall anlegen
                 # moved to Testfaelle.__init__
 #               Set testfall = New Testfaelle
-                test_case = TestCase(
-                    self.info_TF.columns,
-                    row,
-                    self.verification_criteria,
-                )
+            test_case = TestCase(
+                self.info_TF.columns,
+                row,
+                self.verification_criteria,
+            )
 #               
 #               'Erfassten Testfall in globaler Testfall-Liste hinzufügen
 #               testfallList.Add Item:=testfall, Key:=testfall.TF_ID
-                self.test_cases[test_case.id] = test_case
+            self.test_cases[test_case.id] = test_case
 #       '    End If
 #           'Fortschritt anzeigen
             ###TODO: Show progress
@@ -952,7 +960,7 @@ class ATEStatus:
         for verification_criterion in self.verification_criteria.values():
 #           'Abgleich über Element-ID
 #           For Each varVKAnfID In varErfassteVKItem.anf_ids
-            for requirement_id in verification_criterion.anf_ids:
+            for requirement_id in verification_criterion.requirement_ids:
 #               If varVKAnfID = BSMDatensatz.AVWID Then
                 if  bsm_dataset.same_id(requirement_id):
 #                   'Zugehörigkeit des Verifikationskriteriums zu aktuellen Anforderungen kennzeichnen
@@ -972,24 +980,93 @@ class ATEStatus:
 
     def assign_test_cases(self, bsm_dataset:BSMData) -> None:
 #       blnTFZugeordnet = False
-        test_case_assigned = False
+        #test_case_assigned = False ###TODEL: Not used
 #       For Each varErfassteTFItem In testfallList
         test_case:TestCase
         for test_case in self.test_cases.values():
 #           'Abgleich über Element-ID
 #           For Each varTFAnfID In varErfassteTFItem.TF_anfIDs
-            for requirement_id in test_case.anf_ids:
+            for requirement_id in test_case.requirement_ids:
 #               If varTFAnfID = BSMDatensatz.AVWID Then
                 if bsm_dataset.same_id(requirement_id):
 #                   BSMDatensatz.Testfaelle.Add Item:=varErfassteTFItem
                     bsm_dataset.test_cases.append(test_case)
 #                   blnTFZugeordnet = True
-                    test_case_assigned = True
+                    #test_case_assigned = True ###TODEL: Not used
 #                   Exit For
                     break
 #               End If
 #           Next varTFAnfID
 #       Next varErfassteTFItem
+#
+    def add_dataset(self, row:int):
+#       'Neuen AVW-Datensatz anlegen
+        #Create new VW requirement dataset
+        bsm_dataset = BSMData(
+            self.info_AVW.columns,
+            row,
+            self.fru_timming_index,
+            is_specific = self.is_project_specific,
+        )
+        ### Moved to BSMData.__init__
+#       'Zusammenführung BsM-Relevanz
+        bsm_dataset.set_relevance()
+        ### refactored as BSMData.set_relevance()
+        ### called from BSMData.__init__
+#       'ASIL einlesen
+        ### Moved to BSMData.__init__
+#       
+#       'Geplante I-Stufe einlesen
+        ### refactored as BSMData.get_IStufe()
+        ### called from BSMData.__init__
+#       
+        ### Moved to BSMData.__init__
+#       
+#       'Verifikationskriterium zuordnen
+#       'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
+        self.assign_verification_criterion(bsm_dataset)
+#       
+#       'Testfall zuordnen
+        self.assign_test_cases(bsm_dataset)
+#       
+#       'Erfasste AVW-Rohdaten in globaler AVW-Rohdaten-Liste hinzufügen
+#       BsMDatenList.Add Item:=BSMDatensatz, Key:=BSMDatensatz.AVWID
+        self.bsm_datasets[bsm_dataset.avw_id] = bsm_dataset
+
+    def add_successor_dataset(self, row:int):
+#       'Neuen AVW-Datensatz anlegen
+#       Set BSMDatensatz = New BSMDaten
+        bsm_dataset = BSMSuccessorData(
+            self.info_AVW.columns,
+            row,
+            self.fru_timming_index,
+            self.use_predecessor_ids,
+            self.predecessor_index_AVW,
+            is_specific = self.is_project_specific,
+        )
+        ### Moved to BSMSuccessorData.__init__
+#       'Zusammenführung BsM-Relevanz
+        bsm_dataset.set_relevance()
+        ### refactored as BSMData.set_relevance()
+        ### called from BSMData.__init__
+#       'ASIL einlesen
+        ### Moved to BSMData.__init__
+#       
+#       'Geplante I-Stufe einlesen
+        ### refactored as BSMData.get_IStufe()
+        ### called from BSMData.__init__
+#       
+        ### Moved to BSMData.__init__
+#       
+#       'Verifikationskriterium zuordnen
+#       'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
+        self.assign_verification_criterion(bsm_dataset)
+#       'Testfall zuordnen
+        self.assign_test_cases(bsm_dataset)
+#       
+#       'Erfasste AVW-Rohdaten in globaler AVW-Rohdaten-Liste hinzufügen
+#       BsMDatenList.Add Item:=BSMDatensatz, Key:=BSMDatensatz.AVWID
+        self.bsm_datasets[bsm_dataset.avw_id] = bsm_dataset
 
 #   Private Sub EinlesenAVWRohdaten(ByVal wksAVW As Worksheet, ByRef strAVWAttribute() As String, ByRef rngAVWAttribute() As Range, ByRef strLAHBlacklist() As String, _
 #                                   ByVal strProjekt As String, ByRef strAVWAttributeMEB21() As String, ByRef rngAVWAttributeMEB21() As Range)
@@ -1031,43 +1108,12 @@ class ATEStatus:
                     # "gültig"              -- valid DOORS requirements. 
                     # The status is stored in column 6, which is accessed via self.info_AVW.columns[RequirementAttribute.Status][row]
 #           '        If rngAVWAttribute(6).Offset(lngZeile, 0).Value = "Fachlich abgestimmt" Or rngAVWAttribute(6).Offset(lngZeile, 0).Value = "gültig" Then
-                    if self.info_AVW.columns[RequirementAttribute.Status][row] in ['Fachlich abgestimmt', 'gültig']:
+            #        if self.info_AVW.columns[RequirementAttribute.Status][row] in ['Fachlich abgestimmt', 'gültig']:
 #                       'Attribut Cluster Testing => nicht relevant soll ignoriert werden
                         # Testing cluster attribute => "nich relevant" not relevant should be ignored
 #           '            If rngAVWAttribute(18).Offset(lngZeile, 0).Value <> "nicht relevant" Then
-                        if str(self.info_AVW.columns[RequirementAttribute.TestingCluster][row]) != "nicht relevant":
-#                           'Neuen AVW-Datensatz anlegen
-                            #Create new VW requirement dataset
-                            bsm_dataset = BSMData(
-                                self.info_AVW.columns,
-                                row,
-                                self.fru_timming_index,
-                                is_specific = self.is_project_specific,
-                            )
-                            ### Moved to BSMData.__init__
-#                           'Zusammenführung BsM-Relevanz
-                            bsm_dataset.set_relevance()
-                            ### refactored as BSMData.set_relevance()
-                            ### called from BSMData.__init__
-#                           'ASIL einlesen
-                            ### Moved to BSMData.__init__
-#                           
-#                           'Geplante I-Stufe einlesen
-                            ### refactored as BSMData.get_IStufe()
-                            ### called from BSMData.__init__
-#                           
-                            ### Moved to BSMData.__init__
-#                           
-#                           'Verifikationskriterium zuordnen
-#                           'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
-                            self.assign_verification_criterion(bsm_dataset)
-#                           
-#                           'Testfall zuordnen
-                            self.assign_test_cases(bsm_dataset)
-#                           
-#                           'Erfasste AVW-Rohdaten in globaler AVW-Rohdaten-Liste hinzufügen
-#                           BsMDatenList.Add Item:=BSMDatensatz, Key:=BSMDatensatz.AVWID
-                            self.bsm_datasets[bsm_dataset.avw_id] = bsm_dataset
+            #            if str(self.info_AVW.columns[RequirementAttribute.TestingCluster][row]) != "nicht relevant":
+                    self.add_dataset(row)
 #           '            End If
 #           '        End If
 #               End If
@@ -1080,7 +1126,7 @@ class ATEStatus:
 #           End If
 #       Next lngZeile
 #   End Sub
-#   
+
 #   Private Sub EinlesenAVWNachfolgerRohdaten(ByVal wksAVW As Worksheet, ByRef strAVWAttribute() As String, ByRef rngAVWAttribute() As Range, ByRef strLAHBlacklist() As String, _
 #                                             ByVal strProjekt As String, ByRef strAVWAttributMEB21() As String, ByRef rngAVWAttributMEB21() As Range)
     def read_successor_requirement_raw_data(self):
@@ -1119,44 +1165,12 @@ class ATEStatus:
                 if str(self.info_AVW.columns[RequirementAttribute.Document][row]) not in self.blacklist_LAHB:
 #                   'Nur Fachlich abgestimmte (AVW) oder gültige (DOORS) Anforderungen aufnehmen
 #           '        If rngAVWAttribute(6).Offset(lngZeile, 0).Value = "Fachlich abgestimmt" Or rngAVWAttribute(6).Offset(lngZeile, 0).Value = "gültig" Then
-                    if self.info_AVW.columns[RequirementAttribute.Status][row] in ['Fachlich abgestimmt', 'gültig']:
+            #        if self.info_AVW.columns[RequirementAttribute.Status][row] in ['Fachlich abgestimmt', 'gültig']:
 #                       'Attribut Cluster Testing => nicht relevant soll ignoriert werden
 #           '            If rngAVWAttribute(18).Offset(lngZeile, 0).Value <> "nicht relevant" Then
-                        if str(self.info_AVW.columns[RequirementAttribute.TestingCluster][row]) != "nicht relevant":
-#                           'Neuen AVW-Datensatz anlegen
-#                           Set BSMDatensatz = New BSMDaten
-                            bsm_dataset = BSMSuccessorData(
-                                self.info_AVW.columns,
-                                row,
-                                self.fru_timming_index,
-                                self.use_predecessor_ids,
-                                self.predecessor_index_AVW,
-                                is_specific = self.is_project_specific,
-                            )
-                            ### Moved to BSMSuccessorData.__init__
-#                           'Zusammenführung BsM-Relevanz
-                            bsm_dataset.set_relevance()
-                            ### refactored as BSMData.set_relevance()
-                            ### called from BSMData.__init__
-#                           'ASIL einlesen
-                            ### Moved to BSMData.__init__
-#                           
-#                           'Geplante I-Stufe einlesen
-                            ### refactored as BSMData.get_IStufe()
-                            ### called from BSMData.__init__
-#                           
-                            ### Moved to BSMData.__init__
-#                           
-#                           'Verifikationskriterium zuordnen
-#                           'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
-                            self.assign_verification_criterion(bsm_dataset)
-#                  
-#                           'Testfall zuordnen
-                            self.assign_test_cases(bsm_dataset)
-#                           
-#                           'Erfasste AVW-Rohdaten in globaler AVW-Rohdaten-Liste hinzufügen
-#                           BsMDatenList.Add Item:=BSMDatensatz, Key:=BSMDatensatz.AVWID
-                            self.bsm_datasets[bsm_dataset.avw_id] = bsm_dataset
+            #            if str(self.info_AVW.columns[RequirementAttribute.TestingCluster][row]) != "nicht relevant":
+                    # refactored in add_dataset
+                    self.add_successor_dataset(row)
 #           '            End If
 #           '        End If
 #               End If
@@ -1319,7 +1333,7 @@ class ATEStatus:
         str_test_cases = ''
 #       If varErfassteBsMDatensatzItem.Testfaelle.Count > 0 Then
         if len(test_cases) > 0:
-            str_test_cases = CRLF.join([f"{tc.id} - {tc.status} - {tc.testinstanz} - {tc.testumgebungstyp}" for tc in test_cases]) 
+            str_test_cases = CRLF.join([f"{tc.id} - {tc.status} - {tc.test_instance} - {tc.test_environment_type}" for tc in test_cases]) 
 #           For Each varErfassteTFItem In varErfassteBsMDatensatzItem.Testfaelle
             tc:TestCase
             for tc in test_cases:
@@ -1331,85 +1345,87 @@ class ATEStatus:
 #               End If
 #   
 #               blnTFTUZugeordnet = False
-                assignted_tc_te = False
+                assigned_tc_te = False
 #               'Erfassung der vorhandenen relevanten Testumgebungen
 #               For i = LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1)
-                for i in range(len(self.relevant_test_environments)):
 #                   If varErfassteTFItem.TF_Testumgebungstyp = strAbgleichTUs(i) Then
-                    if tc.testumgebungstyp == self.relevant_test_environments[i]:
+                #for optimization
+                assigned_tc_te = tc.test_environment_type in self.relevant_test_environments
+                try:
+                    test_environment_index = self.relevant_test_environments.index(tc.test_environment_type)
+                    assigned_tc_te = True
+                except ValueError:
+                    pass
+                if assigned_tc_te:
 #                       blnTFTUZugeordnet = True
-                        assignted_tc_te = True
 #                       'Unterscheidung nach Status des Testfalls
 #                       If varErfassteTFItem.TF_Status = "Operativ" Then
-                        if tc.status == "Operativ":
+                    if tc.status == "Operativ":
 #                           'Nicht operative Testfälle bereits erfasst?
+                            #----------------------------------------
 #                           If intAbgleichTUs(i) = 0 Then
-                            if self.te_comparison_count[i] == 0:
 #                               intAbgleichTUs(i) = 10
-                                self.te_comparison_count[i] = 10
 #                           ElseIf intAbgleichTUs(i) = 20 Then
-                            elif self.te_comparison_count[i] == 20:
 #                               intAbgleichTUs(i) = 30
-                                self.te_comparison_count[i] = 30
 #                           End If
+                        if self.te_comparison_count[test_environment_index] in (0,20):
+                            self.te_comparison_count[test_environment_index] += 10
+                            #----------------------------------------
 #                       Else
-                        else:
+                    else:
 #                           'Operative Testfälle bereits erfasst?
+                            #-----------------------------------------
 #                           If intAbgleichTUs(i) = 0 Then
-                            if self.te_comparison_count[i] == 0:
 #                               intAbgleichTUs(i) = 20
-                                self.te_comparison_count[i] = 20
 #                           ElseIf intAbgleichTUs(i) = 10 Then
-                            elif self.te_comparison_count[i] == 10:
 #                               intAbgleichTUs(i) = 30
-                                self.te_comparison_count[i] = 30
+                        if self.te_comparison_count[test_environment_index] in (0,10):
+                            self.te_comparison_count[test_environment_index] += 20
+                            #-----------------------------------------
 #                           End If
 #                       End If
 #                   End If
 #               Next i
 #   '           'Restliche bekannte TUs abgleichen
 #   '           If blnTFTUZugeordnet = False Then
-                if not assignted_tc_te:
+                else: #if not assigned_tc_te:
+                    #--------------------------------------------
 #   '               For i = intRelevantekTUs + 1 To UBound(strBekannteTUs, 1)
-                    for i in range(RELEVANT_TOP, len(KNOWN_TEST_ENVIRONMENTS)):
 #   '                    If varErfassteTFItem.TF_Testumgebungstyp = strBekannteTUs(i) Then
-                        if tc.testumgebungstyp == KNOWN_TEST_ENVIRONMENTS[i]:
 #   '                        blnTFTUZugeordnet = True
-                            assignted_tc_te = True
-                            break
 #   '                        Exit For
 #   '                    End If
 #   '                Next i
+                    assigned_tc_te = tc.test_environment_type in KNOWN_TEST_ENVIRONMENTS[RELEVANT_TOP:]
+                    #--------------------------------------------
 #   '            End If
 #               'Weitere TUs erfassen
 #               If blnTFTUZugeordnet = False Then
-                if not assignted_tc_te:
+                if not assigned_tc_te:
+                    #--------------------------------------------
 #                   If intWeitereTUs > 0 Then
-                    if len(self.other_test_environment) > 0:
+                    #if len(self.other_test_environment) > 0:
 #                       For intWeitereTUsZaehler = 1 To intWeitereTUs
-                        for other_te_i in range(0, len(self.other_test_environment)):
 #                           If strWeitereTUs(intWeitereTUsZaehler) = varErfassteTFItem.TF_Testumgebungstyp Then
-                            if self.other_test_environment[other_te_i] == tc.testumgebungstyp:
+                        #    if self.other_test_environment[other_te_i] == tc.testumgebungstyp:
 #                               blnTFTUZugeordnet = True
-                                assignted_tc_te = True
 #                               Exit For
-                                break
 #                           End If
 #                       Next intWeitereTUsZaehler
 #                       If blnTFTUZugeordnet = False Then
-                        if not assignted_tc_te:
 #                           intWeitereTUs = intWeitereTUs + 1
 #                           ReDim Preserve strWeitereTUs(1 To intWeitereTUs)
 #                           strWeitereTUs(intWeitereTUs) = varErfassteTFItem.TF_Testumgebungstyp
-                            self.other_test_environment.append(tc.testumgebungstyp)
 #                       End If
 #                   Else
-                    else:
 #                       intWeitereTUs = 1
 #                       ReDim strWeitereTUs(1 To intWeitereTUs)
 #                       strWeitereTUs(intWeitereTUs) = varErfassteTFItem.TF_Testumgebungstyp
-                        self.other_test_environment.append(tc.testumgebungstyp)
 #                   End If
+                    assigned_tc_te = tc.test_environment_type in self.other_test_environment
+                    if not assigned_tc_te:
+                        self.other_test_environment.append(tc.test_environment_type)
+                    #--------------------------------------------
 #               End If
 #           Next varErfassteTFItem
 #       End If
@@ -1422,7 +1438,7 @@ class ATEStatus:
 #       For i = LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1)
         for index, test_environment_comparison in enumerate(self.relevant_test_environments):
 #           If varErfassteTDAAItem.Testumgebungstyp = strAbgleichTUs(i) Then
-            if security_order.testumgebungstyp == test_environment_comparison:
+            if security_order.test_environment_type == test_environment_comparison:
 #               blnAATUZugeordnet = True
                 blnAATUZugeordnet = True
 #               If intAbgleichTUs(i) = 0 Then
@@ -1473,13 +1489,11 @@ class ATEStatus:
 #           End If
 #       End If
         if not blnAATUZugeordnet:
-            if security_order.testumgebungstyp not in [
-                other for other in self.other_test_environment
-            ]:
-                self.other_test_environment.append(security_order.testumgebungstyp)
+            if security_order.test_environment_type not  in self.other_test_environment:
+                self.other_test_environment.append(security_order.test_environment_type)
 
 #   Private Sub AusgabeATEStatus(ByVal wbBsM As Workbook, ByRef wksBsM As Worksheet, ByRef strBsMAttribute() As String, ByRef rngBsMAttribute() As Range, ByRef strWeitereTUsAusgabe As String, ByRef strDateinamen() As String, ByVal strProjekt As String)
-    def output_status(self):
+    def output_status(self) -> tuple[dict[str,list[str]],str]:
 #       Dim lngDatensatz As Long                        'Long-Variable für aktuell zu schreibenden Datensatz
 #       Dim varErfassteBsMDatensatzItem As Variant      'Variant für Item im globalen BsM-Datensatz
 #       Dim varErfassteTDAAItem As Variant              'Variant für Item aus den jeweiligen Absicherungsaufträgen
@@ -1843,9 +1857,9 @@ class ATEStatus:
                 if strTDVKAktion != '':
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USE CASE", "USE-CASE")
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USECASE", "USE-CASE")
-                    strTDVKAktion = re.sub('USE( )?CASE', 'USE-CASE',strTDVKAktion.upper())
+                    strTDVKAktion = re.sub(r'USE( )?CASE', 'USE-CASE',strTDVKAktion.upper())
 #                   dblTDVKAnzahlUseCases = (Len(strTDVKAktion) - Len(Replace(UCase(strTDVKAktion), "USE-CASE", ""))) / Len("Use-Case")
-                    dblTDVKAnzahlUseCases = (len(strTDVKAktion) - len(re.sub("USE-CASE","", strTDVKAktion)))/ len('Use-Case')
+                    dblTDVKAnzahlUseCases = (len(strTDVKAktion) - len(re.sub("USE-CASE","", strTDVKAktion)))// len('Use-Case')
 #                   'Anzahl 1 bei Befüllung ohne Vorkommen der Schlagwörter
 #                   If dblTDVKAnzahlUseCases = 0 Then dblTDVKAnzahlUseCases = 1
                     if dblTDVKAnzahlUseCases == 0:
@@ -1860,7 +1874,7 @@ class ATEStatus:
                     security_orders = iter(first_verification_criterion.absicherungsauftraege.values())
                     security_order:Absicherungsauftrag=next(security_orders)
                     strTDAA = security_order.abs_id
-                    strTDTiTu = f'{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                    strTDTiTu = f'{security_order.test_instance}: {security_order.test_environment_type}'
 #                   For Each varErfassteTDAAItem In varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).Absicherungsauftraege
                     for security_order in security_orders:
 #                       'Absicherungsaufträge zusammenführen
@@ -1869,7 +1883,7 @@ class ATEStatus:
                             #implemented in if sentence above this for loop
 #                       Else
 #                           strTDAA = strTDAA & vbCrLf & varErfassteTDAAItem.abs_ID
-                        strTDAA = f"{strTDAA}\n\r{security_order.abs_id}"
+                        strTDAA = f"{strTDAA}{CRLF}{security_order.abs_id}"
 #                       End If
 #                       'Ti-Tu-Kombinationen zusammenführen
 #                       If strTDTiTu = "" Then
@@ -1877,16 +1891,16 @@ class ATEStatus:
                             #implemented in if sentence above this for loop
 #                       Else
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                        strTDTiTu = f'{strTDTiTu}\n\r{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                        strTDTiTu = f'{strTDTiTu}{CRLF}{security_order.test_instance}: {security_order.test_environment_type}'
 #                       End If
 #                       
 #                       'Auswertung ob relevante Testinstanzen abgedeckt sind
 #                       If varErfassteTDAAItem.testinstanz <> "eigene Organisationseinheit" And varErfassteTDAAItem.testinstanz <> "Dauerlauf Gesamtfahrzeug" And varErfassteTDAAItem.testinstanz <> "Gesamtverbundintegration" And varErfassteTDAAItem.testinstanz <> "HMS" And varErfassteTDAAItem.testinstanz <> "VZM" Then
-                        if security_order.testinstanz not in ['Dauerlauf Gesamtfahrzeug', 'Gesamtverbundintegration', 'HMS', 'VZM']:
+                        if security_order.test_instance not in ['Dauerlauf Gesamtfahrzeug', 'Gesamtverbundintegration', 'HMS', 'VZM']:
 #                           For intUmsetzer = LBound(varUmsetzer, 1) To UBound(varUmsetzer, 1)
                             for index, implementer in enumerate(varUmsetzer):
 #                               If Trim(varErfassteTDAAItem.testinstanz) = Trim(varUmsetzer(intUmsetzer)) Then
-                                if security_order.testinstanz.strip() == implementer.strip():
+                                if security_order.test_instance.strip() == implementer.strip():
 #                                   blnUmsetzer(intUmsetzer) = True
                                     bln_umsetzer[index] = True
 #                                   Exit For
@@ -1917,7 +1931,7 @@ class ATEStatus:
 #                   Call AusgabeTUAbgleich(intAuswertungTUs, strAuswertungTUs, strAuswertungTUsFehlendeAAs, strAuswertungTUsFehlendeTFs, intAusgabeAuswertungTUs, strAusgabeAuswertungTUs, strAusgabeAuswertungTUsDetails)
                     te_evaluations.output_comparison()
                     te_evaluation_output = te_evaluations.str_output
-                    te_evaluation_output_details = te_evaluation_output_details
+                    te_evaluation_output_details = te_evaluations.output_details
                     te_missing_test_cases = te_evaluations.missing_test_cases
                     te_missing_safe_guards = te_evaluations.missing_safe_guards
 #               Else
@@ -1929,6 +1943,7 @@ class ATEStatus:
                     te_evaluation_int_output = 3
 #               End If
 #           Else
+            else:
 #               'Kein Verifikationskriterium vorhanden
 #               strAusgabeAuswertungTUs = "Kein Verifikationskriterium vorhanden"
                 te_evaluation_output = 'Kein Verifikationskriterium vorhanden'
@@ -2060,18 +2075,23 @@ class ATEStatus:
 #                                       "Absicherungsaufträge: " & strDateinamen(3) & vbCrLf & "Testfälle: " & strDateinamen(3) & vbCrLf & _
 #                                       "FRU-Timing: " & strDateinamen(5)
 #       wksBsM.Rows(lngDatensatz).EntireRow.Hidden = True
-        self.bsm_output_data = bsm_output_data
-        self.output_workbook.append_worksheet(
-            data_frame=pd.DataFrame(
-                bsm_output_data,
-                dtype=str
-            ),
-            name=worksheet_name,
-        )
+        #self.bsm_output_data = bsm_output_data
+        #self.output_workbook.append_worksheet(
+        #    data_frame=pd.DataFrame(
+        #        bsm_output_data,
+        #        dtype=str
+        #    ),
+        #    name=worksheet_name,
+        #)
+        return bsm_output_data, worksheet_name
 #   End Sub
+
+    def output_worksheets(self):
+        yield self.output_status()
+        yield self.output_status_TD()
 #   
 #   Private Sub AusgabeTDStatus(ByVal wbBsM As Workbook, ByRef wksTD As Worksheet, ByRef strTDAttribute() As String, ByRef rngTDAttribute() As Range, ByRef strDateinamen() As String, ByVal strProjekt As String)
-    def output_status_TD(self):
+    def output_status_TD(self) -> tuple[dict[str,list[str]],str]:
 #       Dim lngDatensatz As Long                        'Long-Variable für aktuell zu schreibenden Datensatz
 #       Dim Verifikationskriterium As Verifikationskriterium    'Verifikationskriterium
 #       Dim varErfassteTDAAItem As Variant              'Variant für Item aus den jeweiligen Absicherungsaufträgen
@@ -2261,47 +2281,47 @@ class ATEStatus:
                 row_data[TDAttribute.TDVCTemp1Text] = verification_criterion.temp1_text
 #               'Ausgabe Anforderungs-IDs
 #               rngTDAttribute(10).Offset(lngDatensatz, 0).Value = AusgabeSammlungLF(Verifikationskriterium.anf_ids)
-                row_data[TDAttribute.RequirementIDs] = CRLF.join(verification_criterion.anf_ids)
+                row_data[TDAttribute.RequirementIDs] = CRLF.join(verification_criterion.requirement_ids)
 #               'Ausgabe Zugeordnete I-Stufe
 #               rngTDAttribute(11).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_IStufen)
-                row_data[TDAttribute.AsignedILevel] = CRLF.join(verification_criterion.anf_i_stufen)
+                row_data[TDAttribute.AsignedILevel] = CRLF.join(verification_criterion.requirement_i_level)
                 ###TODO cell formatting: backgroundcolour
 #               If AuswertungUnterschiedlicheIStufen(Verifikationskriterium.anf_IStufen) = True Then
 #                   rngTDAttribute(11).Offset(lngDatensatz, 0).Interior.Color = RGB(255, 255, 102)
 #               End If
 #               'Ausgabe Umsetzer
 #               rngTDAttribute(12).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Umsetzer)
-                row_data[TDAttribute.LAH_Implementer] = CRLF.join(verification_criterion.anf_umsetzer)
+                row_data[TDAttribute.LAH_Implementer] = CRLF.join(verification_criterion.requirement_implementer)
 #               'Ausgabe BsM-Relevanz
 #               rngTDAttribute(13).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_BsMRelevanz)
-                row_data[TDAttribute.LAH_BsMRelevance] = CRLF.join(verification_criterion.anf_bsm_relevanz)
+                row_data[TDAttribute.LAH_BsMRelevance] = CRLF.join(verification_criterion.requirement_bsm_relevance)
 #               'Ausgabe ASIL
 #               rngTDAttribute(14).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_ASIL)
-                row_data[TDAttribute.LAH_ASIL] = CRLF.join(verification_criterion.anf_asil)
+                row_data[TDAttribute.LAH_ASIL] = CRLF.join(verification_criterion.requirement_asil)
 #               'Ausgabe Feature
 #               rngTDAttribute(15).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Feature)
-                row_data[TDAttribute.LAH_Feature] = CRLF.join(verification_criterion.anf_feature)
+                row_data[TDAttribute.LAH_Feature] = CRLF.join(verification_criterion.requirement_feature)
 #               'Ausgabe Reifegrad
 #               rngTDAttribute(16).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Reifegrad)
-                row_data[TDAttribute.LAH_MaturityLevel] = CRLF.join(verification_criterion.anf_reifegrad)
+                row_data[TDAttribute.LAH_MaturityLevel] = CRLF.join(verification_criterion.requirement_maturity_level)
 #               'Ausgabe Modulverantwortlicher
 #               rngTDAttribute(17).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_MV)
-                row_data[TDAttribute.LAH_MV] = CRLF.join(verification_criterion.anf_mv)
+                row_data[TDAttribute.LAH_MV] = CRLF.join(verification_criterion.requirement_mv)
 #               'Ausgabe LAH-IDs
 #               rngTDAttribute(18).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_LAHID)
-                row_data[TDAttribute.LAH_ID] = CRLF.join(verification_criterion.anf_lah_id)
+                row_data[TDAttribute.LAH_ID] = CRLF.join(verification_criterion.requirement_lah_id)
 #               'Ausgabe LAH-Namen
 #               rngTDAttribute(19).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_LAHNamen)
-                row_data[TDAttribute.LAH_Document] = CRLF.join(verification_criterion.anf_lah_namen)
+                row_data[TDAttribute.LAH_Document] = CRLF.join(verification_criterion.requirement_lah_name)
 #               'Ausgabe Cluster Testing
 #               rngTDAttribute(20).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_ClusterTesting)
-                row_data[TDAttribute.TestingCluster] = CRLF.join(verification_criterion.anf_cluster_testing)
+                row_data[TDAttribute.TestingCluster] = CRLF.join(verification_criterion.requirement_cluster_testing)
 #               'Ausgabe Projekt
 #               rngTDAttribute(21).Offset(lngDatensatz, 0).Value = strProjekt
                 row_data[TDAttribute.Project] = self.project
 #               'Ausgabe Anforderungsverantwortliche
 #               rngTDAttribute(24).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Anforderungsverantwortliche)
-                row_data[TDAttribute.LAH_RequirementOwner] = CRLF.join(verification_criterion.anf_anforderungsverantwortliche)
+                row_data[TDAttribute.LAH_RequirementOwner] = CRLF.join(verification_criterion.requirement_owner)
 #               
 #               'Ausgabe Aufwandsschätzung auf Basis der Vorkommen von "Use-Case", "Step", "Aktion"
 #               dblTDVKAnzahlUseCases = 1
@@ -2312,20 +2332,22 @@ class ATEStatus:
                 if tdvc_action != '':
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USE CASE", "USE-CASE")
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USECASE", "USE-CASE")
-                    tdvc_action = re.sub('USE( )?CASE', 'USE-CASE', tdvc_action.upper())
+                    tdvc_action = re.sub(r'USE( )?CASE', 'USE-CASE', tdvc_action.upper())
 #                   dblTDVKAnzahlUseCases = (Len(strTDVKAktion) - Len(Replace(UCase(strTDVKAktion), "USE-CASE", ""))) / Len("Use-Case")
-                    use_cases_count = (len(tdvc_action)-len(re.sub('USE-CASE','',tdvc_action))) / len('USE-CASE')
+                    use_cases_count = (len(tdvc_action)-len(re.sub(r'USE-CASE','',tdvc_action))) // len('USE-CASE')
 #                   'Anzahl 1 bei Befüllung ohne Vorkommen der Schlagwörter
 #                   If dblTDVKAnzahlUseCases = 0 Then dblTDVKAnzahlUseCases = 1
                     if use_cases_count == 0:
                         use_cases_count = 1
 #               End If
 #               rngTDAttribute(23).Offset(lngDatensatz, 0).Value = dblTDVKAnzahlUseCases
-                row_data[TDAttribute.TDVCEffortEstimation] = use_cases_count
+                row_data[TDAttribute.TDVCEffortEstimation] = str(use_cases_count)
 #               
 #               'Rücksetzen der Variablen für TU-Abgleich
-#               ReDim intAbgleichTUs(LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1))
+#               ReDim intAbgleichTUs(LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1))               
+                self.te_comparison_count = [0] * len(self.relevant_test_environments)
 #               ReDim intAuswertungTUs(1 To 31)
+                self.test_environments_evaluation = [0] * 31
 #               ReDim strAuswertungTUs(1 To 31)
 #               strAuswertungTUsFehlendeAAs = ""
 #               strAuswertungTUsFehlendeTFs = ""
@@ -2348,7 +2370,8 @@ class ATEStatus:
                     security_orders = iter(verification_criterion.absicherungsauftraege.values())
                     security_order:Absicherungsauftrag = next(security_orders)
                     strTDAA = security_order.abs_id
-                    strTDTiTu = f'{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                    strTDTiTu = f'{security_order.test_instance}: {security_order.test_environment_type}'
+                    self.abgleich_TUs(security_order)
 #                   For Each varErfassteTDAAItem In Verifikationskriterium.Absicherungsauftraege
                     for security_order in security_orders:
 #                       'Absicherungsaufträge zusammenführen
@@ -2357,7 +2380,7 @@ class ATEStatus:
                             # implemented in if above for
 #                       Else
 #                           strTDAA = strTDAA & vbCrLf & varErfassteTDAAItem.abs_ID
-                        strTDAA = f"{strTDAA}r\n{security_order.abs_id}"
+                        strTDAA = f"{strTDAA}{CRLF}{security_order.abs_id}"
 #                       End If
 #                       'Ti-Tu-Kombinationen zusammenführen
 #                       If strTDTiTu = "" Then
@@ -2365,7 +2388,7 @@ class ATEStatus:
                             # implemented in if above for
 #                       Else
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                        strTDTiTu = f'{strTDTiTu}r\n{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                        strTDTiTu = f'{strTDTiTu}{CRLF}{security_order.test_instance}: {security_order.test_environment_type}'
 #                       End If
 #
 #       'Abgleich der vorhandenen relevanten Testumgebungen                         
@@ -2385,6 +2408,7 @@ class ATEStatus:
                     te_missing_test_cases = te_evaluations.missing_test_cases
                     te_missing_safe_guards = te_evaluations.missing_safe_guards
 #               Else
+                else:
 #                   'Keine Absicherungsaufträge vorhanden
 #                   strAusgabeAuswertungTUs = "Kein Absicherungsauftrag vorhanden"
                     te_evaluation_output  = 'Kein Absicherungsauftrag vorhanden'
@@ -2444,12 +2468,12 @@ class ATEStatus:
 #               If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
                 if self.is_project_specific:
 #                   rngTDAttribute(26).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Temp11_Auswahlfeld)
-                    row_data[TDProjectAttribute.Temp11SelectionField] = CRLF.join(verification_criterion.anf_temp11_auswahlfeld)
+                    row_data[TDProjectAttribute.Temp11SelectionField] = CRLF.join(verification_criterion.requirement_temp11_selection_field)
 #               End If
+                for field, value in row_data.items():
+                    td_output_data[field].append(value)
 #           
-#           End If
-            for field, value in row_data.items():
-                td_output_data[field].append(value)
+#           End If)
 #           
 #       Next Verifikationskriterium
 #       
@@ -2481,14 +2505,15 @@ class ATEStatus:
 #                                       "FRU-Timing: " & strDateinamen(5)
 #       wksTD.Rows(lngDatensatz).EntireRow.Hidden = True
         
-        self.td_output_data = td_output_data
-        self.output_workbook.append_worksheet(
-            data_frame=pd.DataFrame(
-                td_output_data,
-                dtype=str,
-            ),
-            name=worksheet_name,
-        )
+        #self.td_output_data = td_output_data
+        #self.output_workbook.append_worksheet(
+        #    data_frame=pd.DataFrame(
+        #        td_output_data,
+        #        dtype=str,
+        #    ),
+        #    name=worksheet_name,
+        #)
+        return td_output_data, worksheet_name
 #       End Sub
 #
         ###Moved to test_environment_evaluation ---------------------------------       
