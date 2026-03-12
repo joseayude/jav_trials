@@ -138,10 +138,13 @@ class OutputBSMAttribute(StrEnum):
         #known test environments (EN)
 #       ReDim strBekannteTUs(1 To 17)
 #       intRelevantekTUs = 9
+
 RELEVANT_TEST_ENVIRONMENT_TOP = 9
 KNOWN_TEST_ENVIRONMENTS: tuple[str] = (
 #       strBekannteTUs(1) = "BRS-HiL_Laborplatz_automatisiert"
     'BRS-HiL_Laborplatz_automatisiert',
+#       strBekannteTUs(2) = "BRS-HiL_Basis-Funktion"
+    'BRS-HiL_Basis-Funktion',
 #       strBekannteTUs(3) = "BRS-HiL_Kunden-Funktion"
     'BRS-HiL_Kunden-Funktion',
 #       strBekannteTUs(4) = "BRS-HiL_Bremssystem"

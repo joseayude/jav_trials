@@ -43,8 +43,8 @@ class Workbook:
             )
             worksheet = writer.sheets[name]
             for index in range(len(data_frame.columns)):
-                cells_range =col_name_from(index)
-                columns = worksheet.column_dimensions[cells_range]
+                col_name =col_name_from(index)
+                columns = worksheet.column_dimensions[col_name]
                 columns.alignment = Alignment(wrap_text=True)
                 columns.width =70
             print(f"DataFrame saved to '{name}' in {self.file_path}")

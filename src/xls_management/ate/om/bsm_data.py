@@ -234,7 +234,7 @@ class BSMData:
 #       If BSMDatensatz.AVWDokumentName <> "" Then
         if self.avw_dokument_name != '' and self.avw_dokument_name not in verification_criterion.anf_lah_namen:
 #           varErfassteVKItem.addLAHName (BSMDatensatz.AVWDokumentName)
-            verification_criterion.anf_lah_namen.append(self.avw_dokument_name)
+            verification_criterion.add_lah_name(self.avw_dokument_name)
 #       End If
 #       'Cluster Testing für Verifikationskriterium erfassen
 #       If BSMDatensatz.ClusterTesting <> "" Then

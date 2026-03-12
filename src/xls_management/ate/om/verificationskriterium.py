@@ -35,86 +35,117 @@ class Verificationskriterium:
     #    self.anf_ids = anf_ids
 
 ###### From Sub EinlesenVerifikationskriterien() --initialization from a data_frame row
-#               'ID des Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#               strVerifikationsID = Replace(Replace(rngTDVKAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-#               'ID des Verifikationsauftrags erfassen
-#               verifikationKrit.VK_ID = strVerifikationsID
-                self.vk_id = re.sub(r'[\?r]', '',str(columns[VC.ID][row]))
-#               'Anforderungs-IDs einlesen
-#               anfIDs = rngTDVKAttribute(2).Offset(lngZeile, 0).Value
-                anf_ids_str = str(columns[VC.RequirementBased][row])
-#               'Anforderungs-IDs nach Kommas trennen
-#               Set idList = EinlesenGetrennteWerteKomma(anfIDs)
-#               'Alle mit dem aktuellen Verifikationskriterium verknüpften Anforderungs-IDs erfassen
-#               Set verifikationKrit.anf_ids = idList
-                self.anf_ids = list_from_comma_separated_str(anf_ids_str)
-#               'Status des Verifikationskriteriums einlesen
-#               verifikationKrit.VK_status = rngTDVKAttribute(3).Offset(lngZeile, 0).Value
-                self.status = columns[VC.Status][row]
-#               'Absicherungsaufträge für dieses Verifikationskriterium anlegen
-#               Set verifikationKrit.Absicherungsauftraege = New Collection
-                self.absicherungsauftraege:dict[str,Absicherungsauftrag] = {}
-#               'Sammlung für Testfälle vorbereiten
-#               Set verifikationKrit.VK_Testfaelle = New Collection
-                self.test_cases: dict[str, "TestCase"] = {}
-#               'Sammlung für I-Stufen vorbereiten
-#               Set verifikationKrit.anf_IStufen = New Collection
-                self.anf_i_stufen = []  
-#               'Sammlung für Umsetzer vorbereiten
-#               Set verifikationKrit.anf_Umsetzer = New Collection
-                self.anf_umsetzer = []
-#               'Sammlung für BsM-Relevanz vorbereiten
-#               Set verifikationKrit.anf_BsMRelevanz = New Collection
-                self.anf_bsm_relevanz = []
-#               'Sammlung für ASIL vorbereiten
-#               Set verifikationKrit.anf_ASIL = New Collection
-                self.anf_asil = []
-#               'Sammlung für Feature vorbereiten
-#               Set verifikationKrit.anf_Feature = New Collection
-                self.anf_feature = []
-#               'Sammlung für Reifegrad vorbereiten
-#               Set verifikationKrit.anf_Reifegrad = New Collection
-                self.anf_reifegrad = []
-#               'Sammlung für Modulverantwortliche vorbereiten
-#               Set verifikationKrit.anf_MV = New Collection
-                self.anf_mv = []
-#               'Sammlung für LAH-ID vorbereiten
-#               Set verifikationKrit.anf_LAHID = New Collection
-                self.anf_lah_id = []
-#               'Sammlung für LAH-Namen vorbereiten
-#               Set verifikationKrit.anf_LAHNamen = New Collection
-                self.anf_lah_namen = []
-#               'Sammlung für Cluster Testing vorbereiten
-#               Set verifikationKrit.anf_ClusterTesting = New Collection
-                self.anf_cluster_testing = []
-#               'Sammlung für Anforderungsverantwortliche vorbereiten
-#               Set verifikationKrit.anf_Anforderungsverantwortliche = New Collection
-                self.anf_anforderungsverantwortliche = []
-#               'Sammlung für Temp11_Auswahlfeld vorbereiten
-#               Set verifikationKrit.anf_Temp11_Auswahlfeld = New Collection
-                self.anf_temp11_auswahlfeld = []
-#               verifikationKrit.VK_temp1Text = rngTDVKAttribute(4).Offset(lngZeile, 0).Value
-                self.temp1_text = columns[VC.Temp1Text][row]
-#               'Aktion einlesen
-#               verifikationKrit.VK_Aktion = rngTDVKAttribute(5).Offset(lngZeile, 0).Value
-                self.aktion = str(columns[VC.Action][row])
-                self.requirement_present = False
-#
-#   Sub addElementID(ByVal elemID2 As String)
-    def add_element_id(self, anf_id:str):
-#       Dim elemID1 As Variant
+#       'ID des Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
+#       strVerifikationsID = Replace(Replace(rngTDVKAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
+#       'ID des Verifikationsauftrags erfassen
+#       verifikationKrit.VK_ID = strVerifikationsID
+        self.vk_id = re.sub(r'[\?r]', '',str(columns[VC.ID][row]))
+#       'Anforderungs-IDs einlesen
+#       anfIDs = rngTDVKAttribute(2).Offset(lngZeile, 0).Value
+        requirement_ids_str = str(columns[VC.RequirementBased][row])
+#       'Anforderungs-IDs nach Kommas trennen
+#       Set idList = EinlesenGetrennteWerteKomma(anfIDs)
+#       'Alle mit dem aktuellen Verifikationskriterium verknüpften Anforderungs-IDs erfassen
+#       Set verifikationKrit.anf_ids = idList
+        self.requirement_ids = list_from_comma_separated_str(requirement_ids_str)
+#       'Status des Verifikationskriteriums einlesen
+#       verifikationKrit.VK_status = rngTDVKAttribute(3).Offset(lngZeile, 0).Value
+        self.status = columns[VC.Status][row]
+#       'Absicherungsaufträge für dieses Verifikationskriterium anlegen
+#       Set verifikationKrit.Absicherungsauftraege = New Collection
+        self.absicherungsauftraege:dict[str,Absicherungsauftrag] = {}
+#       'Sammlung für Testfälle vorbereiten
+#       Set verifikationKrit.VK_Testfaelle = New Collection
+        self.test_cases: dict[str, "TestCase"] = {}
+#       'Sammlung für I-Stufen vorbereiten
+#       Set verifikationKrit.anf_IStufen = New Collection
+        self.anf_i_stufen = []  
+#       'Sammlung für Umsetzer vorbereiten
+#       Set verifikationKrit.anf_Umsetzer = New Collection
+        self.anf_umsetzer = []
+#       'Sammlung für BsM-Relevanz vorbereiten
+#       Set verifikationKrit.anf_BsMRelevanz = New Collection
+        self.anf_bsm_relevanz = []
+#       'Sammlung für ASIL vorbereiten
+#       Set verifikationKrit.anf_ASIL = New Collection
+        self.anf_asil = []
+#       'Sammlung für Feature vorbereiten
+#       Set verifikationKrit.anf_Feature = New Collection
+        self.anf_feature = []
+#       'Sammlung für Reifegrad vorbereiten
+#       Set verifikationKrit.anf_Reifegrad = New Collection
+        self.anf_reifegrad = []
+#       'Sammlung für Modulverantwortliche vorbereiten
+#       Set verifikationKrit.anf_MV = New Collection
+        self.anf_mv = []
+#       'Sammlung für LAH-ID vorbereiten
+#       Set verifikationKrit.anf_LAHID = New Collection
+        self.anf_lah_id = []
+#       'Sammlung für LAH-Namen vorbereiten
+#       Set verifikationKrit.anf_LAHNamen = New Collection
+        self.anf_lah_namen = []
+#       'Sammlung für Cluster Testing vorbereiten
+#       Set verifikationKrit.anf_ClusterTesting = New Collection
+        self.anf_cluster_testing = []
+#       'Sammlung für Anforderungsverantwortliche vorbereiten
+#       Set verifikationKrit.anf_Anforderungsverantwortliche = New Collection
+        self.anf_anforderungsverantwortliche = []
+#       'Sammlung für Temp11_Auswahlfeld vorbereiten
+#       Set verifikationKrit.anf_Temp11_Auswahlfeld = New Collection
+        self.anf_temp11_auswahlfeld = []
+#       verifikationKrit.VK_temp1Text = rngTDVKAttribute(4).Offset(lngZeile, 0).Value
+        self.temp1_text = columns[VC.Temp1Text][row]
+#       'Aktion einlesen
+#       verifikationKrit.VK_Aktion = rngTDVKAttribute(5).Offset(lngZeile, 0).Value
+        self.aktion = str(columns[VC.Action][row])
+        self.requirement_present = False
+
+
+    def _append(to_list:list[str],item:str):
+        if item not in to_list:
+            to_list.append(item)
+
+
+#   Sub addLAHName(ByVal elemName2 As String)
+    def add_lah_name(self, name:str)-> None:
+#       Dim elemName1 As Variant
 #       Dim isContained As Boolean
 #       
 #       isContained = False
-#       For Each elemID1 In Me.TF_anfIDs
-#           If (elemID1 = elemID2) Then
+#       For Each elemName1 In Me.anf_LAHNamen
+#           If (elemName1 = elemName2) Then
 #               isContained = True
 #               Exit For
 #           End If
-#       Next elemID1
+#       Next elemName1
 #       If (isContained = False) Then
-#           TF_anfIDs.Add elemID2
+#           anf_LAHNamen.Add elemName2
 #       End If
-        if not anf_id in self.anf_ids:
-            self.anf_ids.append(anf_id)
+        if name not in self.anf_lah_namen:
+            self.anf_lah_namen.append(name)
+        
 #   End Sub
+#   
+#   Sub addClusterTesting(ByVal elemName2 As String)
+    def add_cluster_testing(self, name:str)->None:
+#       Dim elemName1 As Variant
+#       Dim isContained As Boolean
+#       
+#       If elemName2 = "" Then
+#           elemName2 = "leer"
+#       End If
+#       
+#       isContained = False
+#       For Each elemName1 In Me.anf_ClusterTesting
+#           If (elemName1 = elemName2) Then
+#               isContained = True
+#               Exit For
+#           End If
+#       Next elemName1
+#       If (isContained = False) Then
+#           anf_ClusterTesting.Add elemName2
+#       End If
+        if name not in self.anf_cluster_testing:
+            self.anf_cluster_testing.append(name)
+#   End Sub
+    

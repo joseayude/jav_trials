@@ -852,25 +852,19 @@ class ATEStatus:
 #           If rngTDAAAttribute(3).Offset(lngZeile, 0).Value = "Fachlich abgestimmt" Or rngTDAAAttribute(3).Offset(lngZeile, 0).Value = "In Review" Or rngTDAAAttribute(3).Offset(lngZeile, 0).Value = "In Bearbeitung" Then
             if self.info_TDAA.columns[TDSafeGuardsAttribute.Status][row] in ['Fachlich abgestimmt', 'In Review', 'In Bearbeitung']:
                 #  Security Order seems to be used only if the verification id is stored in self.verification_criterion_list,
-                #  so we can check this before creating the security order 
+                #  so we can check this before creating the security order
+                # moved from above ------------------------
+#               'ID des übergeordneten Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
+#               strVerifikationsID = Replace(Replace(rngTDAAAttribute(2).Offset(lngZeile, 0).Value, "?", ""), "r", "")
                 verification_criterion_id = str(self.info_TDAA.columns[TDSafeGuardsAttribute.IncludedIn][row])
                 verification_criterion_id = re.sub(r'[\?r]', '', verification_criterion_id)
+                #-------------------------------------------
                 verification_criterion = self.verification_criteria.get(verification_criterion_id, None)
 #               'Neuen Absicherungsauftrag anlegen
 #               Set absicherungsAuftr = New Absicherungsauftraege
                 security_order:Absicherungsauftrag = Absicherungsauftrag(self.info_TDAA.columns, row)
                 # initialization moved to Absicherungsauftrag.__init__
-#               'Testinstanz einlesen
-#               absicherungsAuftr.testinstanz = rngTDAAAttribute(4).Offset(lngZeile, 0).Value
-#               'Testumgebung einlesen
-#               absicherungsAuftr.Testumgebungstyp = Replace(rngTDAAAttribute(5).Offset(lngZeile, 0).Value, "Testumgebungstyp: ", "")
-#               'Status des Absicherungsauftrages einlesen
-#               absicherungsAuftr.abs_status = rngTDAAAttribute(3).Offset(lngZeile, 0).Value
-#               'ID des übergeordneten Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#               strVerifikationsID = Replace(Replace(rngTDAAAttribute(2).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-#               'ID des Absicherungsauftrages einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"
-#               absicherungsAuftr.abs_ID = Replace(Replace(rngTDAAAttribute(1).Offset(lngZeile, 0).Value, "?", ""), "r", "")
-#                   
+
 #               'Zuordnung zu Verifikationskriterium in globaler Verifikationskriterien-Liste
 #               Set Verifikationskriterium = New Verifikationskriterium
 #               Set Verifikationskriterium = FindeVK(verifikationKritList, strVerifikationsID)
@@ -964,7 +958,7 @@ class ATEStatus:
         for verification_criterion in self.verification_criteria.values():
 #           'Abgleich über Element-ID
 #           For Each varVKAnfID In varErfassteVKItem.anf_ids
-            for requirement_id in verification_criterion.anf_ids:
+            for requirement_id in verification_criterion.requirement_ids:
 #               If varVKAnfID = BSMDatensatz.AVWID Then
                 if  bsm_dataset.same_id(requirement_id):
 #                   'Zugehörigkeit des Verifikationskriteriums zu aktuellen Anforderungen kennzeichnen
@@ -984,19 +978,19 @@ class ATEStatus:
 
     def assign_test_cases(self, bsm_dataset:BSMData) -> None:
 #       blnTFZugeordnet = False
-        test_case_assigned = False
+        #test_case_assigned = False ###TODEL: Not used
 #       For Each varErfassteTFItem In testfallList
         test_case:TestCase
         for test_case in self.test_cases.values():
 #           'Abgleich über Element-ID
 #           For Each varTFAnfID In varErfassteTFItem.TF_anfIDs
-            for requirement_id in test_case.anf_ids:
+            for requirement_id in test_case.requirement_ids:
 #               If varTFAnfID = BSMDatensatz.AVWID Then
                 if bsm_dataset.same_id(requirement_id):
 #                   BSMDatensatz.Testfaelle.Add Item:=varErfassteTFItem
                     bsm_dataset.test_cases.append(test_case)
 #                   blnTFZugeordnet = True
-                    test_case_assigned = True
+                    #test_case_assigned = True ###TODEL: Not used
 #                   Exit For
                     break
 #               End If
@@ -1331,7 +1325,7 @@ class ATEStatus:
         str_test_cases = ''
 #       If varErfassteBsMDatensatzItem.Testfaelle.Count > 0 Then
         if len(test_cases) > 0:
-            str_test_cases = CRLF.join([f"{tc.id} - {tc.status} - {tc.testinstanz} - {tc.testumgebungstyp}" for tc in test_cases]) 
+            str_test_cases = CRLF.join([f"{tc.id} - {tc.status} - {tc.test_instance} - {tc.test_environment_type}" for tc in test_cases]) 
 #           For Each varErfassteTFItem In varErfassteBsMDatensatzItem.Testfaelle
             tc:TestCase
             for tc in test_cases:
@@ -1343,85 +1337,87 @@ class ATEStatus:
 #               End If
 #   
 #               blnTFTUZugeordnet = False
-                assignted_tc_te = False
+                assigned_tc_te = False
 #               'Erfassung der vorhandenen relevanten Testumgebungen
 #               For i = LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1)
-                for i in range(len(self.relevant_test_environments)):
 #                   If varErfassteTFItem.TF_Testumgebungstyp = strAbgleichTUs(i) Then
-                    if tc.testumgebungstyp == self.relevant_test_environments[i]:
+                #for optimization
+                assigned_tc_te = tc.test_environment_type in self.relevant_test_environments
+                try:
+                    test_environment_index = self.relevant_test_environments.index(tc.test_environment_type)
+                    assigned_tc_te = True
+                except ValueError:
+                    pass
+                if assigned_tc_te:
 #                       blnTFTUZugeordnet = True
-                        assignted_tc_te = True
 #                       'Unterscheidung nach Status des Testfalls
 #                       If varErfassteTFItem.TF_Status = "Operativ" Then
-                        if tc.status == "Operativ":
+                    if tc.status == "Operativ":
 #                           'Nicht operative Testfälle bereits erfasst?
+                            #----------------------------------------
 #                           If intAbgleichTUs(i) = 0 Then
-                            if self.te_comparison_count[i] == 0:
 #                               intAbgleichTUs(i) = 10
-                                self.te_comparison_count[i] = 10
 #                           ElseIf intAbgleichTUs(i) = 20 Then
-                            elif self.te_comparison_count[i] == 20:
 #                               intAbgleichTUs(i) = 30
-                                self.te_comparison_count[i] = 30
 #                           End If
+                        if self.te_comparison_count[test_environment_index] in (0,20):
+                            self.te_comparison_count[test_environment_index] += 10
+                            #----------------------------------------
 #                       Else
-                        else:
+                    else:
 #                           'Operative Testfälle bereits erfasst?
+                            #-----------------------------------------
 #                           If intAbgleichTUs(i) = 0 Then
-                            if self.te_comparison_count[i] == 0:
 #                               intAbgleichTUs(i) = 20
-                                self.te_comparison_count[i] = 20
 #                           ElseIf intAbgleichTUs(i) = 10 Then
-                            elif self.te_comparison_count[i] == 10:
 #                               intAbgleichTUs(i) = 30
-                                self.te_comparison_count[i] = 30
+                        if self.te_comparison_count[test_environment_index] in (0,10):
+                            self.te_comparison_count[test_environment_index] += 20
+                            #-----------------------------------------
 #                           End If
 #                       End If
 #                   End If
 #               Next i
 #   '           'Restliche bekannte TUs abgleichen
 #   '           If blnTFTUZugeordnet = False Then
-                if not assignted_tc_te:
+                else: #if not assigned_tc_te:
+                    #--------------------------------------------
 #   '               For i = intRelevantekTUs + 1 To UBound(strBekannteTUs, 1)
-                    for i in range(RELEVANT_TOP, len(KNOWN_TEST_ENVIRONMENTS)):
 #   '                    If varErfassteTFItem.TF_Testumgebungstyp = strBekannteTUs(i) Then
-                        if tc.testumgebungstyp == KNOWN_TEST_ENVIRONMENTS[i]:
 #   '                        blnTFTUZugeordnet = True
-                            assignted_tc_te = True
-                            break
 #   '                        Exit For
 #   '                    End If
 #   '                Next i
+                    assigned_tc_te = tc.test_environment_type in KNOWN_TEST_ENVIRONMENTS[RELEVANT_TOP:]
+                    #--------------------------------------------
 #   '            End If
 #               'Weitere TUs erfassen
 #               If blnTFTUZugeordnet = False Then
-                if not assignted_tc_te:
+                if not assigned_tc_te:
+                    #--------------------------------------------
 #                   If intWeitereTUs > 0 Then
-                    if len(self.other_test_environment) > 0:
+                    #if len(self.other_test_environment) > 0:
 #                       For intWeitereTUsZaehler = 1 To intWeitereTUs
-                        for other_te_i in range(0, len(self.other_test_environment)):
 #                           If strWeitereTUs(intWeitereTUsZaehler) = varErfassteTFItem.TF_Testumgebungstyp Then
-                            if self.other_test_environment[other_te_i] == tc.testumgebungstyp:
+                        #    if self.other_test_environment[other_te_i] == tc.testumgebungstyp:
 #                               blnTFTUZugeordnet = True
-                                assignted_tc_te = True
 #                               Exit For
-                                break
 #                           End If
 #                       Next intWeitereTUsZaehler
 #                       If blnTFTUZugeordnet = False Then
-                        if not assignted_tc_te:
 #                           intWeitereTUs = intWeitereTUs + 1
 #                           ReDim Preserve strWeitereTUs(1 To intWeitereTUs)
 #                           strWeitereTUs(intWeitereTUs) = varErfassteTFItem.TF_Testumgebungstyp
-                            self.other_test_environment.append(tc.testumgebungstyp)
 #                       End If
 #                   Else
-                    else:
 #                       intWeitereTUs = 1
 #                       ReDim strWeitereTUs(1 To intWeitereTUs)
 #                       strWeitereTUs(intWeitereTUs) = varErfassteTFItem.TF_Testumgebungstyp
-                        self.other_test_environment.append(tc.testumgebungstyp)
 #                   End If
+                    assigned_tc_te = tc.test_environment_type in self.other_test_environment
+                    if not assigned_tc_te:
+                        self.other_test_environment.append(tc.test_environment_type)
+                    #--------------------------------------------
 #               End If
 #           Next varErfassteTFItem
 #       End If
@@ -1434,7 +1430,7 @@ class ATEStatus:
 #       For i = LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1)
         for index, test_environment_comparison in enumerate(self.relevant_test_environments):
 #           If varErfassteTDAAItem.Testumgebungstyp = strAbgleichTUs(i) Then
-            if security_order.testumgebungstyp == test_environment_comparison:
+            if security_order.test_environment_type == test_environment_comparison:
 #               blnAATUZugeordnet = True
                 blnAATUZugeordnet = True
 #               If intAbgleichTUs(i) = 0 Then
@@ -1485,10 +1481,8 @@ class ATEStatus:
 #           End If
 #       End If
         if not blnAATUZugeordnet:
-            if security_order.testumgebungstyp not in [
-                other for other in self.other_test_environment
-            ]:
-                self.other_test_environment.append(security_order.testumgebungstyp)
+            if security_order.test_environment_type not  in self.other_test_environment:
+                self.other_test_environment.append(security_order.test_environment_type)
 
 #   Private Sub AusgabeATEStatus(ByVal wbBsM As Workbook, ByRef wksBsM As Worksheet, ByRef strBsMAttribute() As String, ByRef rngBsMAttribute() As Range, ByRef strWeitereTUsAusgabe As String, ByRef strDateinamen() As String, ByVal strProjekt As String)
     def output_status(self) -> tuple[dict[str,list[str]],str]:
@@ -1872,7 +1866,7 @@ class ATEStatus:
                     security_orders = iter(first_verification_criterion.absicherungsauftraege.values())
                     security_order:Absicherungsauftrag=next(security_orders)
                     strTDAA = security_order.abs_id
-                    strTDTiTu = f'{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                    strTDTiTu = f'{security_order.test_instance}: {security_order.test_environment_type}'
 #                   For Each varErfassteTDAAItem In varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).Absicherungsauftraege
                     for security_order in security_orders:
 #                       'Absicherungsaufträge zusammenführen
@@ -1889,16 +1883,16 @@ class ATEStatus:
                             #implemented in if sentence above this for loop
 #                       Else
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                        strTDTiTu = f'{strTDTiTu}{CRLF}{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                        strTDTiTu = f'{strTDTiTu}{CRLF}{security_order.test_instance}: {security_order.test_environment_type}'
 #                       End If
 #                       
 #                       'Auswertung ob relevante Testinstanzen abgedeckt sind
 #                       If varErfassteTDAAItem.testinstanz <> "eigene Organisationseinheit" And varErfassteTDAAItem.testinstanz <> "Dauerlauf Gesamtfahrzeug" And varErfassteTDAAItem.testinstanz <> "Gesamtverbundintegration" And varErfassteTDAAItem.testinstanz <> "HMS" And varErfassteTDAAItem.testinstanz <> "VZM" Then
-                        if security_order.testinstanz not in ['Dauerlauf Gesamtfahrzeug', 'Gesamtverbundintegration', 'HMS', 'VZM']:
+                        if security_order.test_instance not in ['Dauerlauf Gesamtfahrzeug', 'Gesamtverbundintegration', 'HMS', 'VZM']:
 #                           For intUmsetzer = LBound(varUmsetzer, 1) To UBound(varUmsetzer, 1)
                             for index, implementer in enumerate(varUmsetzer):
 #                               If Trim(varErfassteTDAAItem.testinstanz) = Trim(varUmsetzer(intUmsetzer)) Then
-                                if security_order.testinstanz.strip() == implementer.strip():
+                                if security_order.test_instance.strip() == implementer.strip():
 #                                   blnUmsetzer(intUmsetzer) = True
                                     bln_umsetzer[index] = True
 #                                   Exit For
@@ -1929,7 +1923,7 @@ class ATEStatus:
 #                   Call AusgabeTUAbgleich(intAuswertungTUs, strAuswertungTUs, strAuswertungTUsFehlendeAAs, strAuswertungTUsFehlendeTFs, intAusgabeAuswertungTUs, strAusgabeAuswertungTUs, strAusgabeAuswertungTUsDetails)
                     te_evaluations.output_comparison()
                     te_evaluation_output = te_evaluations.str_output
-                    te_evaluation_output_details = te_evaluation_output_details
+                    te_evaluation_output_details = te_evaluations.output_details
                     te_missing_test_cases = te_evaluations.missing_test_cases
                     te_missing_safe_guards = te_evaluations.missing_safe_guards
 #               Else
@@ -2278,7 +2272,7 @@ class ATEStatus:
                 row_data[TDAttribute.TDVCTemp1Text] = verification_criterion.temp1_text
 #               'Ausgabe Anforderungs-IDs
 #               rngTDAttribute(10).Offset(lngDatensatz, 0).Value = AusgabeSammlungLF(Verifikationskriterium.anf_ids)
-                row_data[TDAttribute.RequirementIDs] = CRLF.join(verification_criterion.anf_ids)
+                row_data[TDAttribute.RequirementIDs] = CRLF.join(verification_criterion.requirement_ids)
 #               'Ausgabe Zugeordnete I-Stufe
 #               rngTDAttribute(11).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_IStufen)
                 row_data[TDAttribute.AsignedILevel] = CRLF.join(verification_criterion.anf_i_stufen)
@@ -2331,7 +2325,7 @@ class ATEStatus:
 #                   strTDVKAktion = Replace(UCase(strTDVKAktion), "USECASE", "USE-CASE")
                     tdvc_action = re.sub(r'USE( )?CASE', 'USE-CASE', tdvc_action.upper())
 #                   dblTDVKAnzahlUseCases = (Len(strTDVKAktion) - Len(Replace(UCase(strTDVKAktion), "USE-CASE", ""))) / Len("Use-Case")
-                    use_cases_count = (len(tdvc_action)-len(re.sub(r'USE-CASE','',tdvc_action))) / len('USE-CASE')
+                    use_cases_count = (len(tdvc_action)-len(re.sub(r'USE-CASE','',tdvc_action))) // len('USE-CASE')
 #                   'Anzahl 1 bei Befüllung ohne Vorkommen der Schlagwörter
 #                   If dblTDVKAnzahlUseCases = 0 Then dblTDVKAnzahlUseCases = 1
                     if use_cases_count == 0:
@@ -2365,7 +2359,8 @@ class ATEStatus:
                     security_orders = iter(verification_criterion.absicherungsauftraege.values())
                     security_order:Absicherungsauftrag = next(security_orders)
                     strTDAA = security_order.abs_id
-                    strTDTiTu = f'{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                    strTDTiTu = f'{security_order.test_instance}: {security_order.test_environment_type}'
+                    self.abgleich_TUs(security_order)
 #                   For Each varErfassteTDAAItem In Verifikationskriterium.Absicherungsauftraege
                     for security_order in security_orders:
 #                       'Absicherungsaufträge zusammenführen
@@ -2382,7 +2377,7 @@ class ATEStatus:
                             # implemented in if above for
 #                       Else
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                        strTDTiTu = f'{strTDTiTu}{CRLF}{security_order.testinstanz}: {security_order.testumgebungstyp}'
+                        strTDTiTu = f'{strTDTiTu}{CRLF}{security_order.test_instance}: {security_order.test_environment_type}'
 #                       End If
 #
 #       'Abgleich der vorhandenen relevanten Testumgebungen                         
@@ -2402,6 +2397,7 @@ class ATEStatus:
                     te_missing_test_cases = te_evaluations.missing_test_cases
                     te_missing_safe_guards = te_evaluations.missing_safe_guards
 #               Else
+                else:
 #                   'Keine Absicherungsaufträge vorhanden
 #                   strAusgabeAuswertungTUs = "Kein Absicherungsauftrag vorhanden"
                     te_evaluation_output  = 'Kein Absicherungsauftrag vorhanden'
