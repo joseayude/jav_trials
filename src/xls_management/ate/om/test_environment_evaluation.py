@@ -175,7 +175,7 @@ class TestEnvironmentEvaluations:
             ):
 #               'Keine relevanten VK-TUs vorhanden
 #               strAusgabeAuswertungTUs = "Keine relevanten Testumgebungstypen vorhanden"
-                self.str_output = 'Keine relevanten Testumgebungstypen vorhande'
+                self.str_output = 'Keine relevanten Testumgebungstypen vorhanden'
 #               intAusgabeAuswertungTUs = 1
                 self.int_output = 1
 #           End If

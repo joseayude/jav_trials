@@ -24,10 +24,10 @@ class Workbook:
         self.engine = engine
 
     def writer(self):
-        return pd.ExcelWriter(self.file_path)
+        return pd.ExcelWriter(self.file_path, engine=self.engine)
     
     def reader(self):
-        return pd.ExcelFile(self.file_path)
+        return pd.ExcelFile(self.file_path, engine=self.engine)
     
     def append_worksheet(self, writer, data_frame:pd.DataFrame, name:str):
         try:

@@ -2275,44 +2275,44 @@ class ATEStatus:
                 row_data[TDAttribute.RequirementIDs] = CRLF.join(verification_criterion.requirement_ids)
 #               'Ausgabe Zugeordnete I-Stufe
 #               rngTDAttribute(11).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_IStufen)
-                row_data[TDAttribute.AsignedILevel] = CRLF.join(verification_criterion.anf_i_stufen)
+                row_data[TDAttribute.AsignedILevel] = CRLF.join(verification_criterion.requirement_i_level)
                 ###TODO cell formatting: backgroundcolour
 #               If AuswertungUnterschiedlicheIStufen(Verifikationskriterium.anf_IStufen) = True Then
 #                   rngTDAttribute(11).Offset(lngDatensatz, 0).Interior.Color = RGB(255, 255, 102)
 #               End If
 #               'Ausgabe Umsetzer
 #               rngTDAttribute(12).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Umsetzer)
-                row_data[TDAttribute.LAH_Implementer] = CRLF.join(verification_criterion.anf_umsetzer)
+                row_data[TDAttribute.LAH_Implementer] = CRLF.join(verification_criterion.requirement_implementer)
 #               'Ausgabe BsM-Relevanz
 #               rngTDAttribute(13).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_BsMRelevanz)
-                row_data[TDAttribute.LAH_BsMRelevance] = CRLF.join(verification_criterion.anf_bsm_relevanz)
+                row_data[TDAttribute.LAH_BsMRelevance] = CRLF.join(verification_criterion.requirement_bsm_relevance)
 #               'Ausgabe ASIL
 #               rngTDAttribute(14).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_ASIL)
-                row_data[TDAttribute.LAH_ASIL] = CRLF.join(verification_criterion.anf_asil)
+                row_data[TDAttribute.LAH_ASIL] = CRLF.join(verification_criterion.requirement_asil)
 #               'Ausgabe Feature
 #               rngTDAttribute(15).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Feature)
-                row_data[TDAttribute.LAH_Feature] = CRLF.join(verification_criterion.anf_feature)
+                row_data[TDAttribute.LAH_Feature] = CRLF.join(verification_criterion.requirement_feature)
 #               'Ausgabe Reifegrad
 #               rngTDAttribute(16).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Reifegrad)
-                row_data[TDAttribute.LAH_MaturityLevel] = CRLF.join(verification_criterion.anf_reifegrad)
+                row_data[TDAttribute.LAH_MaturityLevel] = CRLF.join(verification_criterion.requirement_maturity_level)
 #               'Ausgabe Modulverantwortlicher
 #               rngTDAttribute(17).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_MV)
-                row_data[TDAttribute.LAH_MV] = CRLF.join(verification_criterion.anf_mv)
+                row_data[TDAttribute.LAH_MV] = CRLF.join(verification_criterion.requirement_mv)
 #               'Ausgabe LAH-IDs
 #               rngTDAttribute(18).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_LAHID)
-                row_data[TDAttribute.LAH_ID] = CRLF.join(verification_criterion.anf_lah_id)
+                row_data[TDAttribute.LAH_ID] = CRLF.join(verification_criterion.requirement_lah_id)
 #               'Ausgabe LAH-Namen
 #               rngTDAttribute(19).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_LAHNamen)
-                row_data[TDAttribute.LAH_Document] = CRLF.join(verification_criterion.anf_lah_namen)
+                row_data[TDAttribute.LAH_Document] = CRLF.join(verification_criterion.requirement_lah_name)
 #               'Ausgabe Cluster Testing
 #               rngTDAttribute(20).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_ClusterTesting)
-                row_data[TDAttribute.TestingCluster] = CRLF.join(verification_criterion.anf_cluster_testing)
+                row_data[TDAttribute.TestingCluster] = CRLF.join(verification_criterion.requirement_cluster_testing)
 #               'Ausgabe Projekt
 #               rngTDAttribute(21).Offset(lngDatensatz, 0).Value = strProjekt
                 row_data[TDAttribute.Project] = self.project
 #               'Ausgabe Anforderungsverantwortliche
 #               rngTDAttribute(24).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Anforderungsverantwortliche)
-                row_data[TDAttribute.LAH_RequirementOwner] = CRLF.join(verification_criterion.anf_anforderungsverantwortliche)
+                row_data[TDAttribute.LAH_RequirementOwner] = CRLF.join(verification_criterion.requirement_owner)
 #               
 #               'Ausgabe Aufwandsschätzung auf Basis der Vorkommen von "Use-Case", "Step", "Aktion"
 #               dblTDVKAnzahlUseCases = 1
@@ -2335,8 +2335,10 @@ class ATEStatus:
                 row_data[TDAttribute.TDVCEffortEstimation] = str(use_cases_count)
 #               
 #               'Rücksetzen der Variablen für TU-Abgleich
-#               ReDim intAbgleichTUs(LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1))
+#               ReDim intAbgleichTUs(LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1))               
+                self.te_comparison_count = [0] * len(self.relevant_test_environments)
 #               ReDim intAuswertungTUs(1 To 31)
+                self.test_environments_evaluation = [0] * 31
 #               ReDim strAuswertungTUs(1 To 31)
 #               strAuswertungTUsFehlendeAAs = ""
 #               strAuswertungTUsFehlendeTFs = ""
@@ -2457,7 +2459,7 @@ class ATEStatus:
 #               If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
                 if self.is_project_specific:
 #                   rngTDAttribute(26).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Temp11_Auswahlfeld)
-                    row_data[TDProjectAttribute.Temp11SelectionField] = CRLF.join(verification_criterion.anf_temp11_auswahlfeld)
+                    row_data[TDProjectAttribute.Temp11SelectionField] = CRLF.join(verification_criterion.requirement_temp11_selection_field)
 #               End If
                 for field, value in row_data.items():
                     td_output_data[field].append(value)

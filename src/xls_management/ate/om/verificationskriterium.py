@@ -59,52 +59,46 @@ class Verificationskriterium:
         self.test_cases: dict[str, "TestCase"] = {}
 #       'Sammlung für I-Stufen vorbereiten
 #       Set verifikationKrit.anf_IStufen = New Collection
-        self.anf_i_stufen = []  
+        self.requirement_i_level = []  
 #       'Sammlung für Umsetzer vorbereiten
 #       Set verifikationKrit.anf_Umsetzer = New Collection
-        self.anf_umsetzer = []
+        self.requirement_implementer = []
 #       'Sammlung für BsM-Relevanz vorbereiten
 #       Set verifikationKrit.anf_BsMRelevanz = New Collection
-        self.anf_bsm_relevanz = []
+        self.requirement_bsm_relevance = []
 #       'Sammlung für ASIL vorbereiten
 #       Set verifikationKrit.anf_ASIL = New Collection
-        self.anf_asil = []
+        self.requirement_asil = []
 #       'Sammlung für Feature vorbereiten
 #       Set verifikationKrit.anf_Feature = New Collection
-        self.anf_feature = []
+        self.requirement_feature = []
 #       'Sammlung für Reifegrad vorbereiten
 #       Set verifikationKrit.anf_Reifegrad = New Collection
-        self.anf_reifegrad = []
+        self.requirement_maturity_level = []
 #       'Sammlung für Modulverantwortliche vorbereiten
 #       Set verifikationKrit.anf_MV = New Collection
-        self.anf_mv = []
+        self.requirement_mv = []
 #       'Sammlung für LAH-ID vorbereiten
 #       Set verifikationKrit.anf_LAHID = New Collection
-        self.anf_lah_id = []
+        self.requirement_lah_id = []
 #       'Sammlung für LAH-Namen vorbereiten
 #       Set verifikationKrit.anf_LAHNamen = New Collection
-        self.anf_lah_namen = []
+        self.requirement_lah_name = []
 #       'Sammlung für Cluster Testing vorbereiten
 #       Set verifikationKrit.anf_ClusterTesting = New Collection
-        self.anf_cluster_testing = []
+        self.requirement_cluster_testing = []
 #       'Sammlung für Anforderungsverantwortliche vorbereiten
 #       Set verifikationKrit.anf_Anforderungsverantwortliche = New Collection
-        self.anf_anforderungsverantwortliche = []
+        self.requirement_owner = []
 #       'Sammlung für Temp11_Auswahlfeld vorbereiten
 #       Set verifikationKrit.anf_Temp11_Auswahlfeld = New Collection
-        self.anf_temp11_auswahlfeld = []
+        self.requirement_temp11_selection_field = []
 #       verifikationKrit.VK_temp1Text = rngTDVKAttribute(4).Offset(lngZeile, 0).Value
         self.temp1_text = columns[VC.Temp1Text][row]
 #       'Aktion einlesen
 #       verifikationKrit.VK_Aktion = rngTDVKAttribute(5).Offset(lngZeile, 0).Value
         self.aktion = str(columns[VC.Action][row])
         self.requirement_present = False
-
-
-    def _append(to_list:list[str],item:str):
-        if item not in to_list:
-            to_list.append(item)
-
 
 #   Sub addLAHName(ByVal elemName2 As String)
     def add_lah_name(self, name:str)-> None:
@@ -121,8 +115,12 @@ class Verificationskriterium:
 #       If (isContained = False) Then
 #           anf_LAHNamen.Add elemName2
 #       End If
-        if name not in self.anf_lah_namen:
-            self.anf_lah_namen.append(name)
+        if name not in self.requirement_lah_name:
+            self.requirement_lah_name.append(name)
+            
+    def add_lah_id(self, id:str)-> None:
+        if id not in self.requirement_lah_id:
+            self.requirement_lah_id.append(id)
         
 #   End Sub
 #   
@@ -145,7 +143,7 @@ class Verificationskriterium:
 #       If (isContained = False) Then
 #           anf_ClusterTesting.Add elemName2
 #       End If
-        if name not in self.anf_cluster_testing:
-            self.anf_cluster_testing.append(name)
+        if name not in self.requirement_cluster_testing:
+            self.requirement_cluster_testing.append(name)
 #   End Sub
     

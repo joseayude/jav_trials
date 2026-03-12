@@ -92,7 +92,7 @@ class TestCase:
 
 #   
 #   Sub addElementID(ByVal elemID2 As String)
-    def add_element_id(self, anf_id:str):
+    def add_element_id(self, requirement_id:str):
 #       Dim elemID1 As Variant
 #       Dim isContained As Boolean
 #       
@@ -106,6 +106,6 @@ class TestCase:
 #       If (isContained = False) Then
 #           TF_anfIDs.Add elemID2
 #       End If
-        if not anf_id in self.requirement_ids:
-            self.requirement_ids.append(anf_id)
+        if not requirement_id in self.requirement_ids:
+            self.requirement_ids.append(requirement_id)
 #   End Sub
