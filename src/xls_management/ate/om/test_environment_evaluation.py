@@ -256,6 +256,7 @@ class TestEnvironmentEvaluations:
 #               strAuswertungTUsFehlendeAAs = strAuswertungTUs(20)
                 self.missing_safe_guards = self.evaluations[20].test_environments
 #           Else
+            else:
 #               strAuswertungTUsFehlendeAAs = strAuswertungTUsFehlendeAAs & ", " & strAuswertungTUs(20)
                 self.missing_safe_guards = f'{self.missing_safe_guards}, {self.evaluations[20].test_environments}'
 #           End If
@@ -269,6 +270,7 @@ class TestEnvironmentEvaluations:
 #               strAuswertungTUsFehlendeAAs = strAuswertungTUs(30)
                 self.missing_safe_guards = self.evaluations[30].test_environments
 #           Else
+            else:
 #               strAuswertungTUsFehlendeAAs = strAuswertungTUsFehlendeAAs & ", " & strAuswertungTUs(30)
                 self.missing_safe_guards = f'{self.missing_safe_guards}, {self.evaluations[30].test_environments}'
 #           End If

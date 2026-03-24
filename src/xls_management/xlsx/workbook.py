@@ -31,7 +31,7 @@ class Workbook:
     
     def append_worksheet(self, writer, data_frame:pd.DataFrame, name:str):
         try:
-            df = data_frame.replace('nan','')
+            df = data_frame.replace({r'\r\n':r'\n', r'_x000D_\n':r'\n', r'_x000D_':r'\r'},regex=True)
             df.to_excel(
                 writer,
                 sheet_name=name,
@@ -105,6 +105,42 @@ class Workbook:
             df = df.replace(to_replace='_x000D_', value='\r', regex=True)
             df.fillna(value="",inplace=True)
             yield name, df
+
+    def load_dataframe(
+            self,
+            skiprows:int=0,
+            sheet_name:str|int=0,
+            replacement:dict[str,str] = {r'_x000D_\n':r'\n', r'_x000D_':r'\r'},
+        ) -> pd.DataFrame|None:
+        """
+        Convert an Excel worksheet to CSV.
+
+        :param csv_path: Path to save the output CSV file
+        :param sheet_name: Sheet name or index (default=0 for first sheet)
+        """
+        df:pd.DataFrame|None = None
+        try:
+            
+            # Validate file existence
+            if not self.file_path.is_file():
+                raise FileNotFoundError(f"Excel file not found: {self.file_path}")
+            # Read the Excel file
+            kvargs={'sheet_name':sheet_name, 'dtype':str, 'engine':self.engine}
+            if skiprows > 0:
+                kvargs['skiprows'] =skiprows
+            with self.reader() as reader:
+                df = pd.read_excel(reader, **kvargs)
+                df = df.replace(to_replace=replacement, regex=True)
+
+        except FileNotFoundError as fnf_err:
+            print(f"❌ Error: {fnf_err}")
+        except ValueError as val_err:
+            print(f"❌ Sheet error: {val_err}")
+        except Exception as e:
+            print(f"❌ Unexpected error: {e}")
+        return df
+
+
 
     def to_csv(
             self,
