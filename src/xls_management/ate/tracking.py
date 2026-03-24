@@ -1790,19 +1790,20 @@ class ATEStatus:
             self.te_comparison_count = [0] * len(self.relevant_test_environments)
 #           ReDim intAuswertungTUs(1 To 31)
             self.test_environments_evaluation = [0] * 31
+            te_evaluations = TestEnvironmentEvaluations(self.te_comparison_count)
 #           ReDim strAuswertungTUs(1 To 31)
             #test environment (EN) = Testumgebung (DE)
             #security application (EN) = Absicherungsauftrag (DE)
 #           strAuswertungTUsFehlendeAAs = ""
-            te_evaluation_missing_safe_guards = ''
+            #initialized in te_evaluations
 #           strAuswertungTUsFehlendeTFs = ""
-            te_evaluation_missing_test_cases = ''
+            #initialized in te_evaluations
 #           intAusgabeAuswertungTUs = 0
-            te_evaluation_int_output = 0
+            #initialized in te_evaluations
 #           strAusgabeAuswertungTUs = ""
-            te_evaluation_output:str = ''
+            #initialized in te_evaluations
 #           strAusgabeAuswertungTUsDetails = ""
-            te_evaluation_output_details:str = ''
+            #initialized in te_evaluations
 #
 #           'Auswertung TF
             str_test_cases = self.auswertung_tf(test_cases=bsm_dataset.test_cases)     
@@ -1925,31 +1926,25 @@ class ATEStatus:
 #                   'Auswertung des Abgleichs der relevanten Testumgebungen
                     #Evaluation of the comparison of relevant test environments
 #                   Call AuswertungTUAbgleich(intAbgleichTUs, strAbgleichTUs, intAuswertungTUs, strAuswertungTUs)
-                    te_evaluations = TestEnvironmentEvaluations(self.te_comparison_count)
+                    #te_evaluations = TestEnvironmentEvaluations(self.te_comparison_count)
                     te_evaluations.summarize()
 #                   
 #                   'Erzeugung der Ausgabe für TU-Vergleich
 #                   Call AusgabeTUAbgleich(intAuswertungTUs, strAuswertungTUs, strAuswertungTUsFehlendeAAs, strAuswertungTUsFehlendeTFs, intAusgabeAuswertungTUs, strAusgabeAuswertungTUs, strAusgabeAuswertungTUsDetails)
                     te_evaluations.output_comparison()
-                    te_evaluation_output = te_evaluations.str_output
-                    te_evaluation_output_details = te_evaluations.output_details
-                    te_evaluation_missing_test_cases = te_evaluations.missing_test_cases
-                    te_evaluation_missing_safe_guards = te_evaluations.missing_safe_guards
 #               Else
                 else:
 #                   'Keine Absicherungsaufträge vorhanden
 #                   strAusgabeAuswertungTUs = "Kein Absicherungsauftrag vorhanden"
-                    te_evaluation_output  = 'Kein Absicherungsauftrag vorhanden'
 #                   intAusgabeAuswertungTUs = 3
-                    te_evaluation_int_output = 3
+                    te_evaluations.empty('Kein Absicherungsauftrag vorhanden')
 #               End If
 #           Else
             else:
 #               'Kein Verifikationskriterium vorhanden
 #               strAusgabeAuswertungTUs = "Kein Verifikationskriterium vorhanden"
-                te_evaluation_output = 'Kein Verifikationskriterium vorhanden'
 #               intAusgabeAuswertungTUs = 3
-                te_evaluation_int_output = 3
+                te_evaluations.empty('Kein Verifikationskriterium vorhanden')
 #           End If
 #           
 #           'Ausgabe Testfälle
@@ -1977,18 +1972,18 @@ class ATEStatus:
 #           'Ausgabe Vergleich TUs
 #           With rngBsMAttribute(19).Offset(lngDatensatz, 0)
 #               .Value = strAusgabeAuswertungTUs
-            row_output[OutputBSMAttribute.OperationalComparisonTEsTDTC] = te_evaluation_output
+            row_output[OutputBSMAttribute.OperationalComparisonTEsTDTC] = te_evaluations.output
             ###TODO: conditional background color format-----
 #               If intAusgabeAuswertungTUs = 1 Then
-            ###if te_evaluation_int_output ==1:
+            ###if te_evaluations.int_output ==1:
 #                   'Grün
 #                   .Interior.Color = RGB(51, 204, 51)
 #               ElseIf intAusgabeAuswertungTUs = 2 Then
-            ###elif te_evaluation_int_output == 2:
+            ###elif te_evaluations.int_output == 2:
 #                   'Gelb
 #                   .Interior.Color = RGB(255, 255, 102)
 #               ElseIf intAusgabeAuswertungTUs = 3 Then
-            ###elif te_evaluation_int_output == 3:
+            ###elif te_evaluations.int_output == 3:
 #                   'Rot
 #                   .Interior.Color = RGB(255, 51, 0)
 #               End If
@@ -1996,18 +1991,18 @@ class ATEStatus:
 #           End With
 #           With rngBsMAttribute(28).Offset(lngDatensatz, 0)
 #               .Value = strAusgabeAuswertungTUsDetails
-            row_output[OutputBSMAttribute.ComparisonExplanations] = te_evaluation_output_details
+            row_output[OutputBSMAttribute.ComparisonExplanations] = te_evaluations.output_details
             ###TODO: conditional background color format--------
 #               If intAusgabeAuswertungTUs = 1 Then
-            ###if te_evaluation_int_output ==1:
+            ###if te_evaluations.int_output ==1:
 #                   'Grün
 #                   .Interior.Color = RGB(51, 204, 51)
 #               ElseIf intAusgabeAuswertungTUs = 2 Then
-            ###elif te_evaluation_int_output == 2:
+            ###elif te_evaluations.int_output == 2:
 #                   'Gelb
 #                   .Interior.Color = RGB(255, 255, 102)
 #               ElseIf intAusgabeAuswertungTUs = 3 Then
-            ###elif te_evaluation_int_output == 3:
+            ###elif te_evaluations.int_output == 3:
 #                   'Rot
 #                   .Interior.Color = RGB(255, 51, 0)
 #               End If
@@ -2016,10 +2011,10 @@ class ATEStatus:
 #           'Ausgabe Erläuterungen zum Vergleich
 #           'Ausgabe fehlende TUs bei TD-AAs
 #           rngBsMAttribute(26).Offset(lngDatensatz, 0).Value = strAuswertungTUsFehlendeAAs
-            row_output[OutputBSMAttribute.MissingTEInTDSafeguards] = te_evaluation_missing_safe_guards
+            row_output[OutputBSMAttribute.MissingTEInTDSafeguards] = te_evaluations.missing_safe_guards
 #           'Ausgabe fehlende TUs bei TFs
 #           rngBsMAttribute(27).Offset(lngDatensatz, 0).Value = strAuswertungTUsFehlendeTFs
-            row_output[OutputBSMAttribute.MissingTEInTCs] = te_evaluation_missing_test_cases
+            row_output[OutputBSMAttribute.MissingTEInTCs] = te_evaluations.missing_test_cases
 #           
 #           'Projektspezifische Ausgabe - MEB21
 #           If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
@@ -2349,17 +2344,18 @@ class ATEStatus:
                 self.te_comparison_count = [0] * len(self.relevant_test_environments)
 #               ReDim intAuswertungTUs(1 To 31)
                 self.test_environments_evaluation = [0] * 31
+                te_evaluations = TestEnvironmentEvaluations(self.te_comparison_count)
 #               ReDim strAuswertungTUs(1 To 31)
 #               strAuswertungTUsFehlendeAAs = ""
-                te_evaluation_missing_safe_guards = ''
+                #initialized in te_evaluations
 #               strAuswertungTUsFehlendeTFs = ""
-                te_evaluation_missing_test_cases = ''
+                #initialized in te_evaluations
 #               intAusgabeAuswertungTUs = 0
-                te_evaluation_int_output = 0
+                #initialized in te_evaluations
 #               strAusgabeAuswertungTUs = ""
-                te_evaluation_output:str = ''
+                #initialized in te_evaluations
 #               strAusgabeAuswertungTUsDetails = ""
-                te_evaluation_output_details:str = ''
+                #initialized in te_evaluations
 #           
 #               'Auswertung TF
                 str_test_cases = self.auswertung_tf(test_cases=list(verification_criterion.test_cases.values()))
@@ -2403,23 +2399,18 @@ class ATEStatus:
 #                   
 #                   'Auswertung des Abgleichs der relevanten Testumgebungen
 #                   Call AuswertungTUAbgleich(intAbgleichTUs, strAbgleichTUs, intAuswertungTUs, strAuswertungTUs)
-                    te_evaluations = TestEnvironmentEvaluations(self.te_comparison_count)
+                    #te_evaluations = TestEnvironmentEvaluations(self.te_comparison_count)
                     te_evaluations.summarize()
 #                   
 #                   'Erzeugung der Ausgabe für TU-Vergleich
 #                   Call AusgabeTUAbgleich(intAuswertungTUs, strAuswertungTUs, strAuswertungTUsFehlendeAAs, strAuswertungTUsFehlendeTFs, intAusgabeAuswertungTUs, strAusgabeAuswertungTUs, strAusgabeAuswertungTUsDetails)
                     te_evaluations.output_comparison()
-                    te_evaluation_output = te_evaluations.str_output
-                    te_evaluation_output_details = te_evaluations.output_details
-                    te_evaluation_missing_test_cases = te_evaluations.missing_test_cases
-                    te_evaluation_missing_safe_guards = te_evaluations.missing_safe_guards
 #               Else
                 else:
 #                   'Keine Absicherungsaufträge vorhanden
 #                   strAusgabeAuswertungTUs = "Kein Absicherungsauftrag vorhanden"
-                    te_evaluation_output  = 'Kein Absicherungsauftrag vorhanden'
 #                   intAusgabeAuswertungTUs = 3
-                    te_evaluation_int_output = 3
+                    te_evaluations.empty('Kein Absicherungsauftrag vorhanden')
 #               End If
 #                    
 #               'Ausgabe TD-AA
@@ -2434,7 +2425,7 @@ class ATEStatus:
 #               'Ausgabe Vergleich TUs
 #               With rngTDAttribute(6).Offset(lngDatensatz, 0)
 #                   .Value = strAusgabeAuswertungTUs
-                row_data[TDAttribute.OperativeTEComparisonTDTC] = te_evaluation_output
+                row_data[TDAttribute.OperativeTEComparisonTDTC] = te_evaluations.output
                 ###TODO format cell background color
 #                   If intAusgabeAuswertungTUs = 1 Then
 #                       'Grün
@@ -2449,7 +2440,7 @@ class ATEStatus:
 #               End With
 #               With rngTDAttribute(7).Offset(lngDatensatz, 0)
 #                   .Value = strAusgabeAuswertungTUsDetails
-                row_data[TDAttribute.ComparisonExplanations] = te_evaluation_output_details
+                row_data[TDAttribute.ComparisonExplanations] = te_evaluations.output_details
                 ###TODO format cell background color
 #                   If intAusgabeAuswertungTUs = 1 Then
 #                       'Grün
@@ -2465,10 +2456,10 @@ class ATEStatus:
 #               'Ausgabe Erläuterungen zum Vergleich
 #               'Ausgabe fehlende TUs bei TD-AAs
 #               rngTDAttribute(8).Offset(lngDatensatz, 0).Value = strAuswertungTUsFehlendeAAs
-                row_data[TDAttribute.MissingTEsInTDSafeGuards] = te_evaluation_missing_safe_guards
+                row_data[TDAttribute.MissingTEsInTDSafeGuards] = te_evaluations.missing_safe_guards
 #               'Ausgabe fehlende TUs bei TFs
 #               rngTDAttribute(9).Offset(lngDatensatz, 0).Value = strAuswertungTUsFehlendeTFs
-                row_data[TDAttribute.MissingTEsInTCs] = te_evaluation_missing_test_cases
+                row_data[TDAttribute.MissingTEsInTCs] = te_evaluations.missing_test_cases
 #           
 #               'Projektspezifische Ausgabe - MEB21
 #               If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then

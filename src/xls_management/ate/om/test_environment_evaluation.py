@@ -23,14 +23,14 @@ class TestEnvironmentEvaluations:
 
     def __init__(
             self,
-            intAbgleichTUs:list[int],
+            comparison_count:list[int],
             test_environment_types:list[str] = KNOWN_TEST_ENVIRONMENTS[:RELEVANT_TOP],
         ):
         self.evaluations:dict[int,TestEnvironmentEvaluation] = { 
             i:TestEnvironmentEvaluation() for i in TestEnvironmentEvaluations.indexes
         }
 #       Dim strAusgabeAuswertungTUs As String           'String für Ausgabe des Tu-Abgleichs
-        self.str_output = ''
+        self.output = ''
 #       Dim intAusgabeAuswertungTUs As Integer          'Integer für Ausgabe des Tu-Abgleichs
         self.int_output = 0
 #       Dim strAuswertungTUsFehlendeAAs As String       'String für Ausgabe der fehlenden TUs bei TD-AAs
@@ -41,14 +41,14 @@ class TestEnvironmentEvaluations:
         self.output_details = ''
         #strAbgleichTUs
         self.test_environment_types = test_environment_types
-        self.intAbgleichTUs = intAbgleichTUs
+        self.comparison_count = comparison_count
 
     def summarize(self):
 #       Dim i As Integer        'Laufvariable
 #       
 #       For i = LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1)
         for index, test_environment_type in enumerate(self.test_environment_types):
-            te_index = self.intAbgleichTUs[index]
+            te_index = self.comparison_count[index]
             if te_index in TestEnvironmentEvaluations.indexes:
             #for evaluation_index in TestEnvironmentEvaluations.indexes:
             #    if self.intAbgleichTUs[index] == evaluation_index:
@@ -138,7 +138,7 @@ class TestEnvironmentEvaluations:
             if self.evaluations[11].value > 0:
 #               'Alle relevanten VK-TUs mit TF (operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Alle relevanten Testumgebungstypen abgedeckt"
-                self.str_output = 'Alle relevanten Testumgebungstypen abgedeckt'
+                self.output = 'Alle relevanten Testumgebungstypen abgedeckt'
 #               'strAusgabeAuswertungTUsDetails = "Alle relevanten Testumgebungstypen mit operativen Testfällen abgedeckt"
 #               strAusgabeAuswertungTUsDetails = "Testfälle vollständig"
                 self.output_details = 'Testfälle vollständig'
@@ -149,7 +149,7 @@ class TestEnvironmentEvaluations:
             if self.evaluations[21].value > 0:
 #               'Alle relevanten VK-TUs mit TF (nicht operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Alle relevanten Testumgebungstypen abgedeckt"
-                self.str_output = 'Alle relevanten Testumgebungstypen abgedeckt'
+                self.output = 'Alle relevanten Testumgebungstypen abgedeckt'
 #               'strAusgabeAuswertungTUsDetails = "Alle relevanten Testumgebungstypen mit nicht operativen Testfällen abgedeckt"
 #               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig
                 self.output_details = 'Testfälle unvollständig'
@@ -160,7 +160,7 @@ class TestEnvironmentEvaluations:
             if  self.evaluations[31].value > 0:
 #               'Alle relevanten VK-TUs mit TF (teilweise operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Alle relevanten Testumgebungstypen abgedeckt"
-                self.str_output = 'Alle relevanten Testumgebungstypen abgedeckt'
+                self.output = 'Alle relevanten Testumgebungstypen abgedeckt'
 #               'strAusgabeAuswertungTUsDetails = "Alle relevanten Testumgebungstypen mit operativen und nicht operativen Testfällen abgedeckt"
 #               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig"
                 self.output_details = 'Testfälle unvollständig'
@@ -175,7 +175,7 @@ class TestEnvironmentEvaluations:
             ):
 #               'Keine relevanten VK-TUs vorhanden
 #               strAusgabeAuswertungTUs = "Keine relevanten Testumgebungstypen vorhanden"
-                self.str_output = 'Keine relevanten Testumgebungstypen vorhanden'
+                self.output = 'Keine relevanten Testumgebungstypen vorhanden'
 #               intAusgabeAuswertungTUs = 1
                 self.int_output = 1
 #           End If
@@ -187,7 +187,7 @@ class TestEnvironmentEvaluations:
             if self.evaluations[11].value > 0:
 #               'Einige relevanten VK-TUs mit TF (operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen teilweise abgedeckt"
-                self.str_output = 'Relevante Testumgebungstypen teilweise abgedeckt'
+                self.output = 'Relevante Testumgebungstypen teilweise abgedeckt'
 #               'strAusgabeAuswertungTUsDetails = "Relevante Testumgebungstypen teilweise mit operativen Testfällen abgedeckt"
 #               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig"
                 self.output_details = 'Testfälle unvollständig'
@@ -199,7 +199,7 @@ class TestEnvironmentEvaluations:
             if self.evaluations[21].value > 0:
 #               'Einige relevanten VK-TUs mit TF (nicht operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen teilweise abgedeckt"
-                self.str_output = 'Relevante Testumgebungstypen teilweise abgedeckt'
+                self.output = 'Relevante Testumgebungstypen teilweise abgedeckt'
 #               'strAusgabeAuswertungTUsDetails = "Relevante Testumgebungstypen teilweise mit nicht operativen Testfällen abgedeckt"
 #               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig"
                 self.output_details = 'Testfälle unvollständig'
@@ -211,7 +211,7 @@ class TestEnvironmentEvaluations:
             if self.evaluations[31].value > 0:
 #               'Einige relevanten VK-TUs mit TF (teilweise operativ) abgedeckt
 #               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen teilweise abgedeckt"
-                self.str_output = 'Relevante Testumgebungstypen teilweise abgedeckt'
+                self.output = 'Relevante Testumgebungstypen teilweise abgedeckt'
 #               'strAusgabeAuswertungTUsDetails = "Relevante Testumgebungstypen teilweise mit operativen und nicht operativen Testfällen abgedeckt"
 #               strAusgabeAuswertungTUsDetails = "Testfälle unvollständig"
                 self.output_details = 'Testfälle unvollständig'
@@ -227,7 +227,7 @@ class TestEnvironmentEvaluations:
             ):
 #               'Keine relevanten VK-TUs abgedeckt
 #               strAusgabeAuswertungTUs = "Relevante Testumgebungstypen nicht abgedeckt"
-                self.str_output = 'Relevante Testumgebungstypen nicht abgedeckt'
+                self.output = 'Relevante Testumgebungstypen nicht abgedeckt'
 #               strAusgabeAuswertungTUsDetails = "Keine Testfälle vorhanden"
                 self.output_details = 'Keine Testfälle vorhanden'
 #               'Feldfarbe rot
@@ -279,3 +279,10 @@ class TestEnvironmentEvaluations:
             ###TODO ask someone: sentence above overwrites asignation made in previous if sentence
 #       End If
 #   End Sub
+
+    def empty(self, output:str):       
+#       '<output>
+#       strAusgabeAuswertungTUs = <output>
+        self.output = output
+#       intAusgabeAuswertungTUs = 3
+        self.int_output = 3
