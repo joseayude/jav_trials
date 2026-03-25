@@ -1,4 +1,3 @@
-
 import re
 
 
@@ -57,3 +56,21 @@ def get_slices(start, top, size):
         i += 1
     if first < top:
         yield i, first, top
+
+def unic_join(str_value:str, input_list:list|tuple):
+    if len(input_list) == 0:
+        return ''
+    values = input_list[:1]
+    for v in input_list[1:]:
+        if v not in values:
+            values.append(v)
+    return str_value.join([str(v) for v in values])
+
+def lazy_join(str_value:str, input_list:list[str]|tuple[str]):
+    if len(input_list) == 0:
+        return ''
+    str_list = input_list[0]
+    for v in input_list[1:]:
+        if v not in str_list:
+            str_list += f'{str_value}{v}'
+    return str_list   

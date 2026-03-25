@@ -83,3 +83,31 @@ def test_get_slices():
     assert list(get_slices(0,5,5)) == [(0,0,5)]
     assert list(get_slices(0,10,5)) == [(0,0,5), (1,5,10)]
     assert list(get_slices(0,11,5)) == [(0,0,5), (1,5,10), (2,10,11)]
+
+def test_unic_join():
+    from xls_management.utils.tools import unic_join
+
+    assert unic_join('-', []) == ''
+    assert unic_join('-', [1]) == '1'
+    assert unic_join('-', [1,1,1]) == '1'
+    assert unic_join('-', [1,2,1]) == '1-2'
+    assert unic_join('-', [1,1,2]) == '1-2'
+    assert unic_join(", ",['one',]) == 'one'
+    assert unic_join(", ",['one','one']) == 'one'
+    assert unic_join(", ",['one','one','two']) == 'one, two'
+    assert unic_join(", ",['one','two','one']) == 'one, two'
+    # No side efects here
+    assert unic_join(", ",['anyone', 'tomorrow', 'one', 'to', 'row']) == 'anyone, tomorrow, one, to, row'
+    assert unic_join(", ",['one', 'to', 'anyone', 'tomorrow', 'row']) == 'one, to, anyone, tomorrow, row'
+
+def test_lazy_join():
+    from xls_management.utils.tools import lazy_join
+
+
+    assert lazy_join(", ",['one']) == 'one'
+    assert lazy_join(", ",['one','one']) == 'one'
+    assert lazy_join(", ",['one','one','two']) == 'one, two'
+    assert lazy_join(", ",['one','two','one']) == 'one, two'
+    # side effects: any item contained in another item could be not added
+    assert lazy_join(", ",['anyone', 'tomorrow', 'one', 'to', 'row']) == 'anyone, tomorrow'
+    assert lazy_join(", ",['one', 'to', 'anyone', 'tomorrow', 'row']) == 'one, to, anyone, tomorrow'
