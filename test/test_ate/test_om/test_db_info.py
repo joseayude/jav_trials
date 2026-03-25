@@ -29,6 +29,26 @@ def test_db_info_einlesen_datei():
         assert data.columns['Brand'][2] == 'Audi'
         assert data.columns['Modell'][1] == 'Polo'
 
+def test_db_info_einlesen_datei_na():
+    import sys
+    to_remove = [name for name in sys.modules if name.startswith("xls_management")]
+    for name in to_remove:
+        del sys.modules[name]
+    file_path: Path = working_path / f"test/data/example_na.xlsx"
+    with patch('xls_management.tui.file_picker.path_from_file_picker', return_value=file_path):
+        from xls_management.ate.om.db_info import DBInfo
+        from xls_management.utils.tools import all_in_sequence
+        data = DBInfo(attributes=('License plate', 'Brand', 'Modell'))
+        success = data.einlesen_datei("Test")
+        assert success is True
+        assert data.error_msg == ""
+        assert all_in_sequence(data.attributes, data.columns.keys())
+        assert data.sheet_name == "Cars"
+        assert len(data.columns["License plate"]) == 3
+        assert data.columns['License plate'][0] == 'DE2456HBZ'
+        assert data.columns['Brand'][2] == 'Audi'
+        assert data.columns['Modell'][1] == 'n/a'
+
 def test_db_info_einlesen_datei_error():
     import sys
     to_remove = [name for name in sys.modules if name.startswith("xls_management")]
