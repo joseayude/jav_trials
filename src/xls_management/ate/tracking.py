@@ -15,7 +15,9 @@ from xls_management.ate.om.verificationskriterium  import Verificationskriterium
 from xls_management.ate.om.vw_requirement_predecessor import VWRequirementPredecessor
 from xls_management.ate.om.absicherungsauftraege import Absicherungsauftrag
 from xls_management.ate.om.test_environment_evaluation import TestEnvironmentEvaluations
+
 from xls_management.utils.tools import lazy_join as unic_join
+#TODO: it should be replaced by unic_join after comparison with VBA script was fulfilled
 
 from xls_management.ate.data_de import (
     RequirementAttribute,
@@ -904,7 +906,7 @@ class ATEStatus:
 #       '    If rngTFAttribute(2).Offset(lngZeile, 0).Value = "Operativ" Then
         #    if self.info_TF.columns[TestCaseAttribute.Status][row] == 'Operativ':
 #               'Neuen Testfall anlegen
-                # moved to Testfaelle.__init__
+                # moved to TestCase.__init__
 #               Set testfall = New Testfaelle
             test_case = TestCase(
                 self.info_TF.columns,
@@ -1327,88 +1329,58 @@ class ATEStatus:
 #           Set ListenObjekt = Nothing
 #           Set FindeAVWVorgaenger = ListenObjekt
 #   End Function
-#   
-    def auswertung_tf(self, test_cases:list[TestCase]):
-#       'Auswertung TF
-#       strTestfaelle = ""
-        str_test_cases = ''
-#       If varErfassteBsMDatensatzItem.Testfaelle.Count > 0 Then
-        if len(test_cases) > 0:
-            str_test_cases = CRLF.join([f"{tc.id} - {tc.status} - {tc.test_instance} - {tc.test_environment_type}" for tc in test_cases]) 
-#           For Each varErfassteTFItem In varErfassteBsMDatensatzItem.Testfaelle
-            tc:TestCase
-            for tc in test_cases:
-#               'Testfälle zusammenführen
-#               If strTestfaelle = "" Then
-#                   strTestfaelle = varErfassteTFItem.TF_ID & " - " & varErfassteTFItem.TF_Status & " - " & varErfassteTFItem.TF_Testinstanz & " - " & varErfassteTFItem.TF_Testumgebungstyp
-#               Else
-#                   strTestfaelle = strTestfaelle & vbCrLf & varErfassteTFItem.TF_ID & " - " & varErfassteTFItem.TF_Status & " - " & varErfassteTFItem.TF_Testinstanz & " - " & varErfassteTFItem.TF_Testumgebungstyp
-#               End If
-#   
+
+    def handle_test_case(self, tc:TestCase):
+        if tc.test_environment_type in self.relevant_test_environments:
+            # Manage relevant test environment test case
+            test_environment_index = self.relevant_test_environments.index(tc.test_environment_type)
+            if tc.status == "Operativ":
+                if self.te_comparison_count[test_environment_index] in (0,20):
+                    self.te_comparison_count[test_environment_index] += 10
+            else:
+                if self.te_comparison_count[test_environment_index] in (0,10):
+                    self.te_comparison_count[test_environment_index] += 20
+            # Manage other test environment test cases
+        elif  tc.test_environment_type not in self.other_test_environment:
+            self.other_test_environment.append(tc.test_environment_type)
 #               blnTFTUZugeordnet = False
-                assigned_tc_te = False
 #               'Erfassung der vorhandenen relevanten Testumgebungen
 #               For i = LBound(strAbgleichTUs, 1) To UBound(strAbgleichTUs, 1)
 #                   If varErfassteTFItem.TF_Testumgebungstyp = strAbgleichTUs(i) Then
-                #for optimization
-                #assigned_tc_te = tc.test_environment_type in self.relevant_test_environments
-                try:
-                    test_environment_index = self.relevant_test_environments.index(tc.test_environment_type)
-                    assigned_tc_te = True
-                except ValueError:
-                    pass
-                if assigned_tc_te:
 #                       blnTFTUZugeordnet = True
 #                       'Unterscheidung nach Status des Testfalls
 #                       If varErfassteTFItem.TF_Status = "Operativ" Then
-                    if tc.status == "Operativ":
 #                           'Nicht operative Testfälle bereits erfasst?
-                            #----------------------------------------
 #                           If intAbgleichTUs(i) = 0 Then
 #                               intAbgleichTUs(i) = 10
 #                           ElseIf intAbgleichTUs(i) = 20 Then
 #                               intAbgleichTUs(i) = 30
 #                           End If
-                        if self.te_comparison_count[test_environment_index] in (0,20):
-                            self.te_comparison_count[test_environment_index] += 10
-                            #----------------------------------------
 #                       Else
-                    else:
 #                           'Operative Testfälle bereits erfasst?
-                            #-----------------------------------------
 #                           If intAbgleichTUs(i) = 0 Then
 #                               intAbgleichTUs(i) = 20
 #                           ElseIf intAbgleichTUs(i) = 10 Then
 #                               intAbgleichTUs(i) = 30
-                        if self.te_comparison_count[test_environment_index] in (0,10):
-                            self.te_comparison_count[test_environment_index] += 20
-                            #-----------------------------------------
 #                           End If
 #                       End If
 #                   End If
 #               Next i
 #   '           'Restliche bekannte TUs abgleichen
 #   '           If blnTFTUZugeordnet = False Then
-                else: #if not assigned_tc_te:
-                    #--------------------------------------------
 #   '               For i = intRelevantekTUs + 1 To UBound(strBekannteTUs, 1)
 #   '                    If varErfassteTFItem.TF_Testumgebungstyp = strBekannteTUs(i) Then
 #   '                        blnTFTUZugeordnet = True
 #   '                        Exit For
 #   '                    End If
 #   '                Next i
-                    assigned_tc_te = tc.test_environment_type in KNOWN_TEST_ENVIRONMENTS[RELEVANT_TOP:]
-                    #--------------------------------------------
 #   '            End If
 #               'Weitere TUs erfassen
 #               If blnTFTUZugeordnet = False Then
-                if not assigned_tc_te:
-                    #--------------------------------------------
 #                   If intWeitereTUs > 0 Then
                     #if len(self.other_test_environment) > 0:
 #                       For intWeitereTUsZaehler = 1 To intWeitereTUs
 #                           If strWeitereTUs(intWeitereTUsZaehler) = varErfassteTFItem.TF_Testumgebungstyp Then
-                        #    if self.other_test_environment[other_te_i] == tc.testumgebungstyp:
 #                               blnTFTUZugeordnet = True
 #                               Exit For
 #                           End If
@@ -1423,11 +1395,29 @@ class ATEStatus:
 #                       ReDim strWeitereTUs(1 To intWeitereTUs)
 #                       strWeitereTUs(intWeitereTUs) = varErfassteTFItem.TF_Testumgebungstyp
 #                   End If
-                    assigned_tc_te = tc.test_environment_type in self.other_test_environment
-                    if not assigned_tc_te:
-                        self.other_test_environment.append(tc.test_environment_type)
-                    #--------------------------------------------
 #               End If
+#   
+    def auswertung_tf(self, test_cases:list[TestCase]):
+#       'Auswertung TF
+#       strTestfaelle = ""
+        str_test_cases = ''
+#       If varErfassteBsMDatensatzItem.Testfaelle.Count > 0 Then
+        if len(test_cases) > 0:
+            str_test_cases = CRLF.join([f"{tc.id} - {tc.status} - {tc.test_instance} - {tc.test_environment_type}" for tc in test_cases]) 
+#           For Each varErfassteTFItem In varErfassteBsMDatensatzItem.Testfaelle
+            tc:TestCase
+            for tc in test_cases:
+                #---------------- moved above outside the loop
+#               'Testfälle zusammenführen
+#               If strTestfaelle = "" Then
+#                   strTestfaelle = varErfassteTFItem.TF_ID & " - " & varErfassteTFItem.TF_Status & " - " & varErfassteTFItem.TF_Testinstanz & " - " & varErfassteTFItem.TF_Testumgebungstyp
+#               Else
+#                   strTestfaelle = strTestfaelle & vbCrLf & varErfassteTFItem.TF_ID & " - " & varErfassteTFItem.TF_Status & " - " & varErfassteTFItem.TF_Testinstanz & " - " & varErfassteTFItem.TF_Testumgebungstyp
+#               End If
+#   
+                #----------------
+                self.handle_test_case(tc)
+                # Moved to handle_test_case method
 #           Next varErfassteTFItem
 #       End If
         return str_test_cases
@@ -1927,6 +1917,7 @@ class ATEStatus:
 #                   'Auswertung des Abgleichs der relevanten Testumgebungen
                     #Evaluation of the comparison of relevant test environments
 #                   Call AuswertungTUAbgleich(intAbgleichTUs, strAbgleichTUs, intAuswertungTUs, strAuswertungTUs)
+                    #te_evaluations = TestEnvironmentEvaluations(self.te_comparison_count)
                     te_evaluations.summarize()
 #                   
 #                   'Erzeugung der Ausgabe für TU-Vergleich
@@ -1949,7 +1940,7 @@ class ATEStatus:
 #           
 #           'Ausgabe Testfälle
 #           rngBsMAttribute(18).Offset(lngDatensatz, 0).Value = strTestfaelle
-            row_output[OutputBSMAttribute.TestCase] = str_test_cases
+            row_output[OutputBSMAttribute.TestCases] = str_test_cases
 #           'Ausgabe TD-AA
 #           rngBsMAttribute(16).Offset(lngDatensatz, 0).Value = strTDAA
             row_output[OutputBSMAttribute.TDSafeguards] = strTDAA
@@ -2287,37 +2278,37 @@ class ATEStatus:
 #               End If
 #               'Ausgabe Umsetzer
 #               rngTDAttribute(12).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Umsetzer)
-                row_data[TDAttribute.LAH_Implementer] =  unic_join(CRLF, verification_criterion.requirement_implementer)
+                row_data[TDAttribute.LAH_Implementer] = unic_join(CRLF, verification_criterion.requirement_implementer)
 #               'Ausgabe BsM-Relevanz
 #               rngTDAttribute(13).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_BsMRelevanz)
-                row_data[TDAttribute.LAH_BsMRelevance] =  unic_join(CRLF, verification_criterion.requirement_bsm_relevance)
+                row_data[TDAttribute.LAH_BsMRelevance] = unic_join(CRLF, verification_criterion.requirement_bsm_relevance)
 #               'Ausgabe ASIL
 #               rngTDAttribute(14).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_ASIL)
-                row_data[TDAttribute.LAH_ASIL] =  unic_join(CRLF, verification_criterion.requirement_asil)
+                row_data[TDAttribute.LAH_ASIL] = unic_join(CRLF, verification_criterion.requirement_asil)
 #               'Ausgabe Feature
 #               rngTDAttribute(15).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Feature)
-                row_data[TDAttribute.LAH_Feature] =  unic_join(CRLF, verification_criterion.requirement_feature)
+                row_data[TDAttribute.LAH_Feature] = unic_join(CRLF, verification_criterion.requirement_feature)
 #               'Ausgabe Reifegrad
 #               rngTDAttribute(16).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Reifegrad)
-                row_data[TDAttribute.LAH_MaturityLevel] =  unic_join(CRLF, verification_criterion.requirement_maturity_level)
+                row_data[TDAttribute.LAH_MaturityLevel] = unic_join(CRLF, verification_criterion.requirement_maturity_level)
 #               'Ausgabe Modulverantwortlicher
 #               rngTDAttribute(17).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_MV)
-                row_data[TDAttribute.LAH_MV] =  unic_join(CRLF, verification_criterion.requirement_mv)
+                row_data[TDAttribute.LAH_MV] = unic_join(CRLF, verification_criterion.requirement_mv)
 #               'Ausgabe LAH-IDs
 #               rngTDAttribute(18).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_LAHID)
-                row_data[TDAttribute.LAH_ID] =  unic_join(CRLF, verification_criterion.requirement_lah_id)
+                row_data[TDAttribute.LAH_ID] = unic_join(CRLF, verification_criterion.requirement_lah_id)
 #               'Ausgabe LAH-Namen
 #               rngTDAttribute(19).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_LAHNamen)
-                row_data[TDAttribute.LAH_Document] =  unic_join(CRLF, verification_criterion.requirement_lah_name)
+                row_data[TDAttribute.LAH_Document] = unic_join(CRLF, verification_criterion.requirement_lah_name)
 #               'Ausgabe Cluster Testing
 #               rngTDAttribute(20).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_ClusterTesting)
-                row_data[TDAttribute.TestingCluster] =  unic_join(CRLF, verification_criterion.requirement_cluster_testing)
+                row_data[TDAttribute.TestingCluster] = unic_join(CRLF, verification_criterion.requirement_cluster_testing)
 #               'Ausgabe Projekt
 #               rngTDAttribute(21).Offset(lngDatensatz, 0).Value = strProjekt
                 row_data[TDAttribute.Project] = self.project
 #               'Ausgabe Anforderungsverantwortliche
 #               rngTDAttribute(24).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Anforderungsverantwortliche)
-                row_data[TDAttribute.LAH_RequirementOwner] =  unic_join(CRLF, verification_criterion.requirement_owner)
+                row_data[TDAttribute.LAH_RequirementOwner] = unic_join(CRLF, verification_criterion.requirement_owner)
 #               
 #               'Ausgabe Aufwandsschätzung auf Basis der Vorkommen von "Use-Case", "Step", "Aktion"
 #               dblTDVKAnzahlUseCases = 1
@@ -2399,6 +2390,7 @@ class ATEStatus:
 #                   
 #                   'Auswertung des Abgleichs der relevanten Testumgebungen
 #                   Call AuswertungTUAbgleich(intAbgleichTUs, strAbgleichTUs, intAuswertungTUs, strAuswertungTUs)
+                    #te_evaluations = TestEnvironmentEvaluations(self.te_comparison_count)
                     te_evaluations.summarize()
 #                   
 #                   'Erzeugung der Ausgabe für TU-Vergleich
@@ -2464,7 +2456,7 @@ class ATEStatus:
 #               If strProjekt = "MEB21" Or strProjekt = "MQB48W" Then
                 if self.is_project_specific:
 #                   rngTDAttribute(26).Offset(lngDatensatz, 0).Value = AusgabeSammlungLFEinfach(Verifikationskriterium.anf_Temp11_Auswahlfeld)
-                    row_data[TDProjectAttribute.Temp11SelectionField] =  unic_join(CRLF, verification_criterion.requirement_temp11_selection_field)
+                    row_data[TDProjectAttribute.Temp11SelectionField] = unic_join(CRLF, verification_criterion.requirement_temp11_selection_field)
 #               End If
                 for field, value in row_data.items():
                     td_output_data[field].append(value)

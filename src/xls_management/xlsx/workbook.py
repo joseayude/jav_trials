@@ -10,6 +10,8 @@ from xls_management.utils.tools import col_name_from, get_slices
 
 #CODEC = 'cp1252'
 CODEC = 'iso-8859-1'
+#NA_VALUES = ('', '#N/A', '#N/A N/A', '#NA', '-1.#IND', '-1.#QNAN', '-NaN', '-nan', '1.#IND', '1.#QNAN', '<NA>', 'N/A', 'NA', 'NULL', 'NaN', 'None', 'n/a', 'nan', 'null')
+NA_VALUES = ('', '#N/A', '#N/A N/A', '#NA', '-1.#IND', '-1.#QNAN', '-NaN', '-nan', '1.#IND', '1.#QNAN', '<NA>', 'N/A', 'NA', 'NULL', 'NaN', 'None', 'nan', 'null')
 
 class Workbook:
     def __init__(self, file_path:Path|str, engine:str='openpyxl'):
@@ -100,7 +102,13 @@ class Workbook:
     def all_sheets(self) -> Generator[tuple[str,pd.DataFrame],None,None]:
         """iterator """
         for name in self.sheet_names():
-            df:pd.DataFrame = pd.read_excel(self.file_path, sheet_name=name, dtype=str, engine=self.engine)
+            df:pd.DataFrame = pd.read_excel(
+                self.file_path,
+                sheet_name=name, dtype=str,
+                engine=self.engine,
+                na_values=NA_VALUES,
+                keep_default_na=False,
+            )
             #fix: each value _x000D_ is replaced by \r
             df = df.replace(to_replace='_x000D_', value='\r', regex=True)
             df.fillna(value="",inplace=True)
@@ -125,7 +133,12 @@ class Workbook:
             if not self.file_path.is_file():
                 raise FileNotFoundError(f"Excel file not found: {self.file_path}")
             # Read the Excel file
-            kvargs={'sheet_name':sheet_name, 'dtype':str, 'engine':self.engine}
+            kvargs={
+                'sheet_name':sheet_name,
+                'dtype':str,
+                'keep_default_na':False,
+                'engine':self.engine,
+            }
             if skiprows > 0:
                 kvargs['skiprows'] =skiprows
             with self.reader() as reader:

@@ -266,17 +266,13 @@ class TestEnvironmentEvaluations:
 #           'TF operativ und nicht operativ
 #           'strAusgabeAuswertungTUsDetails = strAusgabeAuswertungTUsDetails & vbCrLf & "Weitere operative und nicht operative Testfälle für abweichende Testumgebungstypen vorhanden."
 #           If strAuswertungTUsFehlendeAAs = "" Then
-            if self.missing_safe_guards == '':
 #               strAuswertungTUsFehlendeAAs = strAuswertungTUs(30)
-                self.missing_safe_guards = self.evaluations[30].test_environments
 #           Else
-            else:
 #               strAuswertungTUsFehlendeAAs = strAuswertungTUsFehlendeAAs & ", " & strAuswertungTUs(30)
-                self.missing_safe_guards = f'{self.missing_safe_guards}, {self.evaluations[30].test_environments}'
 #           End If
 #           strAuswertungTUsFehlendeAAs = strAuswertungTUs(30)
+            # This sentence overwrites value set in If bock above
             self.missing_safe_guards = self.evaluations[30].test_environments
-            ###TODO ask someone: sentence above overwrites asignation made in previous if sentence
 #       End If
 #   End Sub
 

@@ -1,5 +1,7 @@
 import re
 
+import pytest
+
 from xls_management import HOMEPATH
 from xls_management.utils.tools import (
     all_in_sequence,
@@ -111,3 +113,12 @@ def test_lazy_join():
     # side effects: any item contained in another item could be not added
     assert lazy_join(", ",['anyone', 'tomorrow', 'one', 'to', 'row']) == 'anyone, tomorrow'
     assert lazy_join(", ",['one', 'to', 'anyone', 'tomorrow', 'row']) == 'one, to, anyone, tomorrow'
+
+
+def test_index():
+    values = ["one","three"]
+    with pytest.raises(ValueError) as exinfo:
+        _ = values.index("two")
+    assert str(exinfo.value) == "'two' is not in list"
+    assert values.index('one') == 0
+    assert values.index('three') == 1

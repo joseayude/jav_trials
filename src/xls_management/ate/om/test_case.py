@@ -53,20 +53,20 @@ class TestCase:
             '',
             str(columns[TestCaseAttribute.OtherVariants][row])
         )
-        ###TODO: check that Testumgebungstyp is the right column name
 #       
 #       'Alle direkt mit dem aktuellen Testfall verknüpften Anforderungs-IDs erfassen
 #       'direkte Testfälle nicht berücksichtigen!
 #       'Anforderungs-IDs einlesen
 #       'anfIDs = rngTFAttribute(6).Offset(lngZeile, 0).Value
-        requirement_ids = str(columns[TestCaseAttribute.Verified][row])
+        #requirement_ids = str(columns[TestCaseAttribute.Verified][row])
 #       'Anforderungs-IDs nach Kommas trennen
 #       'Set idList = EinlesenGetrennteWerteKomma(anfIDs)
 #       'Anforderungs-IDs übernehmen
 #       'Set testfall.TF_anfIDs = idList
-        self.requirement_ids = list_from_comma_separated_str(requirement_ids)
+        #self.requirement_ids = list_from_comma_separated_str(requirement_ids)
 #       'Neue Sammlung für Anforderungs-IDs anlegen - Notwendig, wenn Liste der direkten Testfälle nicht übernommen wird
 #       Set testfall.TF_anfIDs = New Collection
+        self.requirement_ids = []
 #       
 #       'Alle über das Testdesign mit dem aktuellen Testfall verknüpften Anforderungs-IDs erfassen
 #       'ID des übergeordneten Verifikationsauftrags einlesen, Entfernung der zusätzlichen Zeichen "?" und "r"

@@ -118,7 +118,7 @@ class OutputBSMAttribute(StrEnum):
 #   TD-TI:TU
     TDTITE = 'TD-TI:TU'
 #   Testfälle
-    TestCase = 'Testfälle'
+    TestCases = 'Testfälle'
 #   Vergleich TUs (TD-TF) - operativ
     OperationalComparisonTEsTDTC = 'Vergleich TUs (TD-TF) - operativ'
 #   Erläuterungen zum Vergleich
