@@ -50,14 +50,11 @@ class TestEnvironmentEvaluations:
         for index, test_environment_type in enumerate(self.test_environment_types):
             te_index = self.comparison_count[index]
             if te_index in TestEnvironmentEvaluations.indexes:
-            #for evaluation_index in TestEnvironmentEvaluations.indexes:
-            #    if self.intAbgleichTUs[index] == evaluation_index:
                 self.evaluations[te_index].value += 1
                 if self.evaluations[te_index].test_environments == '':
                     self.evaluations[te_index].test_environments = test_environment_type
                 else:
                     self.evaluations[te_index].test_environments += f', {test_environment_type}'
-            #        break
 #           If intAbgleichTUs(i) = 1 Then
 #               '#TF nicht vorhanden, VK fachlich abgestimmt
 #                   intAuswertungTUs(1) = intAuswertungTUs(1) + 1

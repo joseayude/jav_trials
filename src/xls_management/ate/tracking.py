@@ -1864,28 +1864,30 @@ class ATEStatus:
 #               'Auswertung TD-AA
 #               If varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).Absicherungsauftraege.Count > 0 Then
                 if len(first_verification_criterion.absicherungsauftraege) > 0:
-                    security_orders = iter(first_verification_criterion.absicherungsauftraege.values())
-                    security_order:Absicherungsauftrag=next(security_orders)
-                    strTDAA = security_order.abs_id
-                    strTDTiTu = f'{security_order.test_instance}: {security_order.test_environment_type}'
+                    security_orders = list(first_verification_criterion.absicherungsauftraege.values())
+                    #------1)
+                    strTDAA = CRLF.join([so.abs_id for so in security_orders])
+                    #------2)
+                    strTDTiTu = CRLF.join([f'{so.test_instance}: {so.test_environment_type}' for so in security_orders])
 #                   For Each varErfassteTDAAItem In varErfassteBsMDatensatzItem.Verifikationskriterium.Item(1).Absicherungsauftraege
                     for security_order in security_orders:
+                        #----------------------------------------------- implemented above 1)
 #                       'Absicherungsaufträge zusammenführen
 #                       If strTDAA = "" Then
 #                           strTDAA = varErfassteTDAAItem.abs_ID
                             #implemented in if sentence above this for loop
 #                       Else
 #                           strTDAA = strTDAA & vbCrLf & varErfassteTDAAItem.abs_ID
-                        strTDAA = f"{strTDAA}{CRLF}{security_order.abs_id}"
 #                       End If
+                        #----------------------------------------------- implemented above 2)
 #                       'Ti-Tu-Kombinationen zusammenführen
 #                       If strTDTiTu = "" Then
 #                           strTDTiTu = varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
                             #implemented in if sentence above this for loop
 #                       Else
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                        strTDTiTu = f'{strTDTiTu}{CRLF}{security_order.test_instance}: {security_order.test_environment_type}'
 #                       End If
+                        #-----------------------------------------------
 #                       
 #                       'Auswertung ob relevante Testinstanzen abgedeckt sind
 #                       If varErfassteTDAAItem.testinstanz <> "eigene Organisationseinheit" And varErfassteTDAAItem.testinstanz <> "Dauerlauf Gesamtfahrzeug" And varErfassteTDAAItem.testinstanz <> "Gesamtverbundintegration" And varErfassteTDAAItem.testinstanz <> "HMS" And varErfassteTDAAItem.testinstanz <> "VZM" Then
@@ -1899,7 +1901,7 @@ class ATEStatus:
 #                                   Exit For
                                     break
 #                               End If
-#                           Next intUmsetzer
+#                           Next intUmsetzer                           
 #                       End If
 #                       
 #       '                'Auswertung Testinstanz Erlaubt/Unerlaubt
@@ -2360,29 +2362,28 @@ class ATEStatus:
 #               'Auswertung TD-AA
 #               If Verifikationskriterium.Absicherungsauftraege.Count > 0 Then
                 if len(verification_criterion.absicherungsauftraege) > 0:
-                    security_orders = iter(verification_criterion.absicherungsauftraege.values())
-                    security_order:Absicherungsauftrag = next(security_orders)
-                    strTDAA = security_order.abs_id
-                    strTDTiTu = f'{security_order.test_instance}: {security_order.test_environment_type}'
-                    self.abgleich_TUs(security_order)
+                    security_orders = list(verification_criterion.absicherungsauftraege.values())
+                    #------1)
+                    strTDAA = CRLF.join([so.abs_id for so in security_orders])
+                    #------2)
+                    strTDTiTu = CRLF.join([f'{so.test_instance}: {so.test_environment_type}' for so in security_orders])
 #                   For Each varErfassteTDAAItem In Verifikationskriterium.Absicherungsauftraege
                     for security_order in security_orders:
+                        #----------------------------------------------- implemented above 1)
 #                       'Absicherungsaufträge zusammenführen
 #                       If strTDAA = "" Then
 #                           strTDAA = varErfassteTDAAItem.abs_ID
-                            # implemented in if above for
 #                       Else
 #                           strTDAA = strTDAA & vbCrLf & varErfassteTDAAItem.abs_ID
-                        strTDAA = f"{strTDAA}{CRLF}{security_order.abs_id}"
 #                       End If
+                        #----------------------------------------------- implemented above 2)
 #                       'Ti-Tu-Kombinationen zusammenführen
 #                       If strTDTiTu = "" Then
 #                           strTDTiTu = varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                            # implemented in if above for
 #                       Else
 #                           strTDTiTu = strTDTiTu & vbCrLf & varErfassteTDAAItem.testinstanz & ": " & varErfassteTDAAItem.Testumgebungstyp
-                        strTDTiTu = f'{strTDTiTu}{CRLF}{security_order.test_instance}: {security_order.test_environment_type}'
 #                       End If
+                        #-----------------------------------------------
 #
 #       'Abgleich der vorhandenen relevanten Testumgebungen                         
                         self.abgleich_TUs(security_order)
